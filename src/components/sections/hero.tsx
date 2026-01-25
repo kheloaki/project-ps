@@ -21,7 +21,7 @@ const fallbackImages = [
   {
     id: 'fallback-1',
     title: 'Research Peptide',
-    image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXThPqzWA8OuYweSR8dN35rU4p2BWkt9XoqiAD0',
+    image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXTpjhev3YS3TLs1f5IOgyVciDHzwA0R8WQnCFe',
     handle: 'product-1',
     position: 'back' as const,
     alt: 'Research peptide product',
@@ -29,7 +29,7 @@ const fallbackImages = [
   {
     id: 'fallback-2',
     title: 'Premium Peptide',
-    image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXT0JnzHMvohvmVGH1B2KikqDYgbW94JQsl3ItP',
+    image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXTMqzLEU7w3yFortmnh5ZsuQWkHaC4RVU96EIc',
     handle: 'product-2',
     position: 'center' as const,
     alt: 'Premium research peptide',
@@ -37,7 +37,7 @@ const fallbackImages = [
   {
     id: 'fallback-3',
     title: 'Laboratory Grade',
-    image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXTuqvrBj2vUxjVQKO1S7TnadADmB0Gckp5IWsC',
+    image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXTPt1KI53GwceL9grbjJEt1327qWhV546mNfSo',
     handle: 'product-3',
     position: 'back' as const,
     alt: 'Laboratory grade peptide',
