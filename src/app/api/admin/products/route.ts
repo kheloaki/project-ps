@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       seoDescription,
       category,
       coaImageUrl,
+      isPopular = false,
       images = [],
       variants = [],
     } = body;
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
         seoDescription: seoDescription || null,
         category,
         coaImageUrl: coaImageUrl || null,
+        isPopular: Boolean(isPopular),
         variants: {
           create: variants.map((variant: any) => ({
             title: variant.title,

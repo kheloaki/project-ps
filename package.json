@@ -15,7 +15,9 @@
     "db:setup": "tsx scripts/setup-database.ts",
     "db:create-tables": "tsx scripts/create-tables.ts",
     "test:webhook": "tsx scripts/test-webhook.ts",
-    "webhook:ngrok": "./scripts/start-ngrok.sh"
+    "webhook:ngrok": "./scripts/start-ngrok.sh",
+    "create-products": "tsx scripts/create-products.ts",
+    "scrape-products": "tsx scripts/scrape-products.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",

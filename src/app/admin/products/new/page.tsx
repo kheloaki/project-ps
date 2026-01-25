@@ -83,6 +83,7 @@ export default function NewProductPage() {
     seoDescription: '',
     category: '',
     coaImageUrl: '',
+    isPopular: false,
   });
 
   // Fetch categories on mount
@@ -310,10 +311,11 @@ export default function NewProductPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
+          body: JSON.stringify({
           ...formData,
           bodyHtml: bodyHtml || formData.bodyHtml,
           images: uploadedImages.map(img => img.url), // Send array of image URLs
+          isPopular: formData.isPopular,
           variants: variants.map(v => ({
             title: v.title,
             price: v.price,
@@ -543,6 +545,22 @@ export default function NewProductPage() {
                       placeholder="0"
                     />
                   </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <input
+                    type="checkbox"
+                    id="isPopular"
+                    name="isPopular"
+                    checked={formData.isPopular}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isPopular: e.target.checked }))}
+                    className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                  />
+                  <label htmlFor="isPopular" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Show in Popular Products Section
+                  </label>
+                  <HelpCircle className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs text-gray-500">When enabled, this product will appear in the Popular Peptides section on the homepage</span>
                 </div>
 
                 <div>

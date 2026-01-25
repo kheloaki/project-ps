@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { CometCard } from "@/components/ui/comet-card";
 import { useCart } from "@/hooks/use-cart";
 import { ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
-import productsData from "@/data/products.json";
 import {
   Carousel,
   CarouselContent,
@@ -36,8 +35,6 @@ function parsePrice(priceString: string): number {
   return match ? parseFloat(match[0]) : 0;
 }
 
-// Popular peptides - curated list of well-known products
-const popularProductHandles = ['nad', 'sermorelin', 'cagrisema', 'survodutide-10mg', 'tesamorelin-1'];
 
 const ProductCard = ({ product }: { product: Product }) => {
   const { addItem } = useCart();
@@ -106,10 +103,42 @@ const ProductCard = ({ product }: { product: Product }) => {
 };
 
 export default function PopularPeptides() {
-  // Filter products to only show popular ones
-  const popularProducts = (productsData as Product[]).filter((product) =>
-    popularProductHandles.includes(product.handle || product.id)
-  );
+  const [popularProducts, setPopularProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPopularProducts = async () => {
+      try {
+        const response = await fetch('/api/products?popular=true');
+        if (response.ok) {
+          const data = await response.json();
+          setPopularProducts(data.products || []);
+        }
+      } catch (error) {
+        console.error('Error fetching popular products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPopularProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="bg-white py-[60px] md:py-[80px] border-t border-[#e0e0e0]">
+        <div className="container px-[30px] mx-auto max-w-[1230px]">
+          <div className="text-center">
+            <p className="text-[#616161]">Loading popular products...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (popularProducts.length === 0) {
+    return null;
+  }
 
   return (
     <section className="bg-white py-[60px] md:py-[80px] border-t border-[#e0e0e0]">

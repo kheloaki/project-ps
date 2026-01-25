@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const category = searchParams.get('category');
     const limit = searchParams.get('limit');
+    const popular = searchParams.get('popular');
 
     if (handle) {
       const product = await getProductByHandle(handle);
@@ -53,6 +54,13 @@ export async function GET(request: NextRequest) {
       });
       
       return NextResponse.json({ products: jsonProducts });
+    }
+
+    if (popular === 'true') {
+      const products = await getAllProducts();
+      const popularProducts = products.filter((p) => p.isPopular === true);
+      const limitedProducts = limit ? popularProducts.slice(0, parseInt(limit)) : popularProducts;
+      return NextResponse.json({ products: limitedProducts });
     }
 
     if (category) {
