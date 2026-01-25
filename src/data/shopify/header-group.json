@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "header": {
+      "type": "header",
+      "settings": {
+        "logo_position": "left",
+        "menu_position": "middle-left",
+        "show_search": true,
+        "color_scheme_top": "scheme-1",
+        "color_scheme_bottom": "scheme-1"
+      }
+    }
+  },
+  "order": ["header"]
+}

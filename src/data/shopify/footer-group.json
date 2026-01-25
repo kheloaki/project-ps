@@ -1,0 +1,17 @@
+{
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "settings": {
+        "color_scheme": "scheme-1"
+      }
+    },
+    "footer-utilities": {
+      "type": "footer-utilities",
+      "settings": {
+        "color_scheme": "scheme-1"
+      }
+    }
+  },
+  "order": ["footer", "footer-utilities"]
+}

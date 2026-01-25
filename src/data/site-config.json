@@ -1,0 +1,17 @@
+{
+  "company": {
+    "name": "Peptides Skin",
+    "email": "support@peptidesskin.com",
+    "address": "United States",
+    "description": "Premier B2B supplier of high-purity research-grade peptides serving academic institutions, private laboratories, and independent researchers.",
+    "founded": "2024"
+  },
+  "socials": {
+    "instagram": "https://instagram.com/peptidesskin",
+    "twitter": "https://twitter.com/peptidesskin"
+  },
+  "contact": {
+    "support_hours": "Mon - Fri, 9am - 5pm EST",
+    "response_time": "Within 24-48 hours"
+  }
+}

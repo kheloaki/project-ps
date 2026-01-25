@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "section": {
+      "type": "main-blog-post",
+      "settings": {
+        "content_direction": "vertical",
+        "gap": 20,
+        "color_scheme": "scheme-1",
+        "padding_block_start": 40,
+        "padding_block_end": 40
+      }
+    }
+  },
+  "order": ["section"]
+}

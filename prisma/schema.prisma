@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Product Model
+model Product {
+  id             String   @id @default(cuid())
+  handle         String   @unique
+  title          String
+  price          String
+  image          String
+  images         String[] // Array of image URLs for gallery
+  description    String   @db.Text
+  bodyHtml       String?  @db.Text
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  category       String
+  coaImageUrl   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  variants    ProductVariant[]
+  collections ProductCollection[]
+
+  @@index([handle])
+  @@index([category])
+  @@map("products")
+}
+
+// Product Variant Model
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  title     String
+  price     String
+  sku       String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+// Collection Model
+model Collection {
+  id          String   @id @default(cuid())
+  handle      String   @unique
+  title       String
+  description String?  @db.Text
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products ProductCollection[]
+
+  @@index([handle])
+  @@map("collections")
+}
+
+// Product-Collection Junction Table
+model ProductCollection {
+  id           String   @id @default(cuid())
+  productId    String
+  collectionId String
+  createdAt    DateTime @default(now())
+
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, collectionId])
+  @@index([productId])
+  @@index([collectionId])
+  @@map("product_collections")
+}
+
+// Blog Post Model
+model BlogPost {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  excerpt         String   @db.Text
+  content         String   @db.Text
+  image           String
+  alt             String?
+  category        String
+  date            DateTime
+  metaDescription String?  @db.Text
+  tags            String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([date])
+  @@map("blog_posts")
+}
+
+// Cart Item Model (for server-side cart management)
+model CartItem {
+  id        String   @id @default(cuid())
+  sessionId String
+  productId String
+  variantId String?
+  quantity  Int      @default(1)
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sessionId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+// Order Model
+model Order {
+  id              String   @id @default(cuid())
+  sessionId       String
+  userId          String?
+  stripeSessionId String?  @unique
+  total           Float
+  status          String   @default("pending")
+  customerEmail   String?
+  shippingAddress Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user  UserProfile? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items OrderItem[]
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([stripeSessionId])
+  @@index([status])
+  @@map("orders")
+}
+
+// Order Item Model
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  productId    String
+  variantId    String?
+  title        String
+  variantTitle String?
+  quantity     Int
+  price        Float
+  createdAt    DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// User Profile Model (linked to Clerk)
+model UserProfile {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  email       String?
+  firstName   String?
+  lastName    String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([clerkUserId])
+  @@index([email])
+  @@map("user_profiles")
+}

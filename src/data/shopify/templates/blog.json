@@ -1,0 +1,13 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-blog",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "padding_block_start": 40,
+        "padding_block_end": 40
+      }
+    }
+  },
+  "order": ["main"]
+}
