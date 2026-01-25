@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "node:path";
 
 const nextConfig: NextConfig = {
   images: {
@@ -14,7 +13,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  outputFileTracingRoot: path.resolve(__dirname, '../../'),
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -24,7 +22,61 @@ const nextConfig: NextConfig = {
   turbopack: {
     rules: {
     }
-  }
+  },
+  async redirects() {
+    return [
+      {
+        source: '/collections/frontpage',
+        destination: '/collections/all',
+        permanent: true,
+      },
+      {
+        source: '/blogs/news.atom',
+        destination: '/blogs/news',
+        permanent: true,
+      },
+      {
+        source: '/pages/sitemap',
+        destination: '/pages/products-collections-sitemap',
+        permanent: true,
+      },
+      {
+        source: '/products',
+        destination: '/collections/all',
+        permanent: true,
+      },
+      {
+        source: '/collections',
+        destination: '/collections/all',
+        permanent: true,
+      },
+      {
+        source: '/blogs',
+        destination: '/blogs/news',
+        permanent: true,
+      },
+      {
+        source: '/pages/privacy-policy',
+        destination: '/policies/privacy-policy',
+        permanent: true,
+      },
+      {
+        source: '/pages/terms-of-service',
+        destination: '/policies/terms-of-service',
+        permanent: true,
+      },
+      {
+        source: '/pages/refund-policy',
+        destination: '/policies/refund-policy',
+        permanent: true,
+      },
+      {
+        source: '/pages/shipping-policy',
+        destination: '/policies/shipping-policy',
+        permanent: true,
+      },
+    ];
+  },
 } as NextConfig;
 
 export default nextConfig;
