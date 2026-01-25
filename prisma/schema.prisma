@@ -181,3 +181,21 @@ model UserProfile {
   @@index([email])
   @@map("user_profiles")
 }
+
+// Hero Image Model (for home page hero section)
+model HeroImage {
+  id          String   @id @default(cuid())
+  url         String
+  title       String?
+  alt         String?
+  position    String   @default("back") // "back", "center", "front"
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([position])
+  @@index([isActive])
+  @@index([order])
+  @@map("hero_images")
+}

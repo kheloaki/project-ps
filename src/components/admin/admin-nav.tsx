@@ -8,6 +8,7 @@ import {
   Tag, 
   FileText, 
   ShoppingCart,
+  Image as ImageIcon,
   ChevronRight
 } from 'lucide-react';
 
@@ -17,6 +18,7 @@ const navItems = [
   { href: '/admin/categories', icon: Tag, label: 'Categories' },
   { href: '/admin/blog', icon: FileText, label: 'Blog', hasSubmenu: true },
   { href: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
+  { href: '/admin/hero-images', icon: ImageIcon, label: 'Hero Images' },
 ];
 
 export function AdminNav() {

@@ -13,8 +13,8 @@ const AgeVerificationOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Check if the user has already verified their age in this session
-    const isVerified = sessionStorage.getItem('age-verified');
+    // Check if the user has already verified their age (persists across sessions)
+    const isVerified = localStorage.getItem('age-verified');
     if (!isVerified) {
       setIsVisible(true);
       // Disable scrolling on the body while modal is open
@@ -23,7 +23,8 @@ const AgeVerificationOverlay: React.FC = () => {
   }, []);
 
   const handleConfirm = () => {
-    sessionStorage.setItem('age-verified', 'true');
+    // Store in localStorage so it persists across browser sessions
+    localStorage.setItem('age-verified', 'true');
     setIsVisible(false);
     document.body.classList.remove('overflow-hidden');
   };

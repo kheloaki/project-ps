@@ -11,8 +11,8 @@ export function AgeGate() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Check if the user has already verified in this session
-    const isVerified = sessionStorage.getItem("age-verified");
+    // Check if the user has already verified their age (persists across sessions)
+    const isVerified = localStorage.getItem("age-verified");
     if (!isVerified) {
       setIsVisible(true);
       // Add class to body to prevent scrolling when modal is open
@@ -21,7 +21,8 @@ export function AgeGate() {
   }, []);
 
   const handleEnter = () => {
-    sessionStorage.setItem("age-verified", "true");
+    // Store in localStorage so it persists across browser sessions
+    localStorage.setItem("age-verified", "true");
     setIsVisible(false);
     document.body.classList.remove("overflow-hidden");
   };

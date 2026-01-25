@@ -13,8 +13,8 @@ export default function AgeVerificationModal() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Check if user has already verified their age in this session
-    const isVerified = sessionStorage.getItem("age-verified");
+    // Check if user has already verified their age (persists across sessions)
+    const isVerified = localStorage.getItem("age-verified");
     if (!isVerified) {
       setIsOpen(true);
       // Add class to body to prevent scrolling when modal is open
@@ -23,7 +23,8 @@ export default function AgeVerificationModal() {
   }, []);
 
   const handleConfirm = () => {
-    sessionStorage.setItem("age-verified", "true");
+    // Store in localStorage so it persists across browser sessions
+    localStorage.setItem("age-verified", "true");
     setIsOpen(false);
     document.body.classList.remove("gate-open");
   };
