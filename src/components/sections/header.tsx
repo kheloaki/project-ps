@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { AuthUserButton } from '@/components/auth';
@@ -41,7 +40,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-[50] w-full bg-white border-b border-[#e2e2e2]">
-      <div className="container px-[20px] md:px-[40px] h-[120px] flex items-center justify-between">
+      <div className="container px-[20px] md:px-[40px] h-[140px] flex items-center justify-between">
         {/* Left: Navigation Menu */}
         <nav className="hidden lg:flex items-center space-x-[20px] flex-1">
           <a href="/" className="nav-item whitespace-nowrap">
@@ -75,16 +74,11 @@ const Header = () => {
 
         {/* Center: Logo */}
         <div className="flex justify-center items-center flex-shrink-0">
-          <a href="/" className="inline-block">
-            <Image
-              src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/230936c2-4e5c-43af-beb9-b9e321d2e7bf-peptidesskin-com/assets/images/peptidesskin-peptide-logo_1-1.webp"
-              alt="peptidesskin logo"
-              width={90}
-              height={90}
-              className="object-contain"
-              priority
-            />
-          </a>
+          <Link href="/" className="inline-block">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#8A773E] tracking-tight">
+              Peptides Skin
+            </h1>
+          </Link>
         </div>
 
         {/* Right: Icons */}
@@ -136,7 +130,7 @@ const Header = () => {
         }
         @media (max-width: 1024px) {
           .container {
-            height: 90px;
+            height: 110px;
           }
         }
       `}</style>

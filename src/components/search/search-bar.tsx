@@ -18,17 +18,27 @@ interface Product {
 interface SearchBarProps {
   isOpen: boolean;
   onClose: () => void;
+  initialQuery?: string;
 }
 
 const popularKeywords = ['bpc-157', 'beta', 'cjc-1295', 'tesamorelin'];
 
-export function SearchBar({ isOpen, onClose }: SearchBarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+export function SearchBar({ isOpen, onClose, initialQuery = '' }: SearchBarProps) {
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addItem } = useCart();
+
+  // Update search query when initialQuery changes
+  useEffect(() => {
+    if (isOpen && initialQuery) {
+      setSearchQuery(initialQuery);
+    } else if (!isOpen) {
+      setSearchQuery('');
+    }
+  }, [isOpen, initialQuery]);
 
   // Fetch popular products on mount
   useEffect(() => {

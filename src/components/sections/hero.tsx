@@ -1,90 +1,43 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
-interface HeroImage {
-  id: string;
-  url: string;
-  title: string | null;
-  alt: string | null;
-  position: string;
-  order: number;
-  isActive: boolean;
-}
-
-// Fallback images if no images are uploaded - using provided URLs
+// Fallback images - using provided URLs only
 const fallbackImages = [
   {
     id: 'fallback-1',
-    title: 'Research Peptide',
+    title: 'CAGRI-SEMA',
     image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXTpjhev3YS3TLs1f5IOgyVciDHzwA0R8WQnCFe',
-    handle: 'product-1',
-    position: 'back' as const,
-    alt: 'Research peptide product',
+    handle: 'cagri-sema',
+    position: 'back' as 'back' | 'center' | 'front',
+    alt: 'CAGRI-SEMA Research Peptide',
   },
   {
     id: 'fallback-2',
-    title: 'Premium Peptide',
+    title: 'NAD+',
     image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXTMqzLEU7w3yFortmnh5ZsuQWkHaC4RVU96EIc',
-    handle: 'product-2',
-    position: 'center' as const,
-    alt: 'Premium research peptide',
+    handle: 'nad',
+    position: 'center' as 'back' | 'center' | 'front',
+    alt: 'NAD+ Research Peptide',
   },
   {
     id: 'fallback-3',
-    title: 'Laboratory Grade',
+    title: 'Sermorelin',
     image: 'https://zhi52hg7v8.ufs.sh/f/2Om2Ppf6miXTPt1KI53GwceL9grbjJEt1327qWhV546mNfSo',
-    handle: 'product-3',
-    position: 'back' as const,
-    alt: 'Laboratory grade peptide',
+    handle: 'sermorelin',
+    position: 'back' as 'back' | 'center' | 'front',
+    alt: 'Sermorelin Research Peptide',
   },
-] as const;
+];
 
 const HeroSection = () => {
-  const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchHeroImages();
-  }, []);
-
-  const fetchHeroImages = async () => {
-    try {
-      const response = await fetch('/api/hero-images');
-      if (response.ok) {
-        const data = await response.json();
-        setHeroImages(data.images || []);
-      }
-    } catch (error) {
-      console.error('Error fetching hero images:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Use uploaded images if available, otherwise use fallback
-  const displayImages = heroImages.length > 0 
-    ? heroImages.map(img => ({
-        id: img.id,
-        title: img.title || 'Product',
-        image: img.url,
-        handle: img.id,
-        position: img.position as 'back' | 'center' | 'front',
-        alt: img.alt || img.title || 'Hero image',
-      }))
-    : fallbackImages;
-
-  // Group images by position
-  const centerImage = displayImages.find(img => img.position === 'center');
-  const backImages = displayImages.filter(img => img.position === 'back');
-  const frontImages = displayImages.filter(img => img.position === 'front');
-  
-  // Combine all images in order: back, center, front
-  const orderedImages = [...backImages, ...(centerImage ? [centerImage] : []), ...frontImages].slice(0, 3);
+  // Always use the provided URLs - no API calls
+  // Group images by position and order them: back, center, front
+  const orderedImages = [...fallbackImages].slice(0, 3);
   return (
     <section className="relative w-full min-h-[500px] md:min-h-[600px] lg:min-h-[700px] xl:min-h-[800px] overflow-hidden">
       {/* New Background - Gradient */}
@@ -101,10 +54,29 @@ const HeroSection = () => {
 
       {/* Content Container */}
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center py-16 md:py-24 lg:py-32">
-          {/* Mobile Products - Show first on mobile, hidden on desktop */}
-          {!loading && orderedImages.length > 0 && (
-            <div className="flex lg:hidden flex-row gap-1 sm:gap-2 items-center justify-center relative order-1 py-8">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center pt-0 pb-16 md:pb-24 lg:pb-32">
+          {/* Left Content - Show first on mobile, first on desktop */}
+          <div className="max-w-3xl order-1 lg:order-1">
+          {/* Badge/Tag */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#8A773E]/90 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6 animate-fade-in">
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            Science-Backed Peptide Solutions
+          </div>
+
+          {/* Main Heading */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
+            High-Purity Research
+            <span className="block text-[#8A773E] mt-2">Peptides & Bulk Synthesis</span>
+          </h1>
+
+          {/* Subheading */}
+          <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 max-w-2xl leading-relaxed animate-slide-up-delay">
+            Discover premium quality peptides backed by rigorous research and cutting-edge synthesis technology.
+          </p>
+
+          {/* Mobile Products - Show after subheading on mobile, hidden on desktop */}
+          {orderedImages.length > 0 && (
+            <div className="flex lg:hidden flex-row gap-1 sm:gap-2 items-center justify-center relative py-0 mb-2">
               {orderedImages.map((product, index) => {
                 const isCenter = product.position === 'center';
                 const isBack = product.position === 'back';
@@ -114,8 +86,8 @@ const HeroSection = () => {
                     key={product.id}
                     className={`group relative animate-float cursor-pointer ${
                       isCenter 
-                        ? 'w-48 h-64 sm:w-56 sm:h-72 md:w-64 md:h-80 z-20' 
-                        : 'w-40 h-56 sm:w-48 sm:h-64 md:w-56 md:h-72 z-10 opacity-70'
+                        ? 'w-64 h-80 sm:w-72 sm:h-96 md:w-80 md:h-[28rem] z-20' 
+                        : 'w-56 h-72 sm:w-64 sm:h-80 md:w-72 md:h-96 z-10 opacity-70'
                     }`}
                     style={{
                       animationDelay: `${index * 0.2}s`,
@@ -133,7 +105,7 @@ const HeroSection = () => {
                         alt={product.alt || product.title || 'Hero image'}
                         fill
                         className="object-contain drop-shadow-2xl group-hover:drop-shadow-[0_0_30px_rgba(138,119,62,0.5)] transition-all duration-500 product-vial-image"
-                        sizes="(max-width: 640px) 192px, (max-width: 768px) 224px, 256px"
+                        sizes="(max-width: 640px) 256px, (max-width: 768px) 288px, 320px"
                         style={{
                           mixBlendMode: 'lighten',
                         }}
@@ -145,25 +117,6 @@ const HeroSection = () => {
               })}
             </div>
           )}
-
-          {/* Left Content - Show second on mobile, first on desktop */}
-          <div className="max-w-3xl order-2 lg:order-1">
-          {/* Badge/Tag */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#8A773E]/90 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6 animate-fade-in">
-            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            Science-Backed Peptide Solutions
-          </div>
-
-          {/* Main Heading */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
-            High-Purity Research
-            <span className="block text-[#8A773E] mt-2">Peptides & Bulk Synthesis</span>
-          </h1>
-
-          {/* Subheading */}
-          <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 max-w-2xl leading-relaxed animate-slide-up-delay">
-            Discover premium quality peptides backed by rigorous research and cutting-edge synthesis technology.
-          </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 animate-slide-up-delay-2">
@@ -211,7 +164,7 @@ const HeroSection = () => {
           </div>
 
           {/* Right Side - Floating Product Vials - Desktop only */}
-          {!loading && orderedImages.length > 0 && (
+          {orderedImages.length > 0 && (
             <div className="hidden lg:flex flex-row gap-0 items-center justify-center relative order-2">
               {orderedImages.map((product, index) => {
                 const isCenter = product.position === 'center';
