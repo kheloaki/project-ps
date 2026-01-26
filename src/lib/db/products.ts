@@ -23,9 +23,6 @@ export async function getAllProducts(): Promise<ProductWithVariants[]> {
 /**
  * Get a product by handle
  */
-/**
- * Get a product by handle
- */
 export async function getProductByHandle(handle: string): Promise<ProductWithVariants | null> {
   // Always use raw SQL to ensure FAQs are included (works in both dev and production)
   // This bypasses Prisma client caching issues in production
@@ -53,26 +50,19 @@ export async function getProductByHandle(handle: string): Promise<ProductWithVar
         const parsed = JSON.parse(faqsRaw);
         productData.faqs = Array.isArray(parsed) ? parsed : null;
       } catch (e) {
-        console.error('Error parsing FAQs from string:', e, 'Raw value:', faqsRaw);
+        console.error('Error parsing FAQs from string:', e);
         productData.faqs = null;
       }
     } else if (Array.isArray(faqsRaw)) {
       // Already an array, validate it
       productData.faqs = faqsRaw.length > 0 ? faqsRaw : null;
-    } else if (typeof faqsRaw === 'object') {
-      // Might be a JSON object
-      if (Array.isArray(faqsRaw)) {
-        productData.faqs = faqsRaw.length > 0 ? faqsRaw : null;
-      } else {
-        console.warn('FAQs is an object but not an array:', faqsRaw);
-        productData.faqs = null;
-      }
+    } else if (typeof faqsRaw === 'object' && Array.isArray(faqsRaw)) {
+      productData.faqs = faqsRaw.length > 0 ? faqsRaw : null;
     } else {
-      console.warn('Unexpected FAQs type:', typeof faqsRaw, faqsRaw);
       productData.faqs = null;
     }
   } catch (error) {
-    console.error('Error processing FAQs:', error, 'Raw value:', faqsRaw);
+    console.error('Error processing FAQs:', error);
     productData.faqs = null;
   }
   

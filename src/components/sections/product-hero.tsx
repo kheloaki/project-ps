@@ -24,13 +24,10 @@ const ProductHero = ({ product }: ProductHeroProps) => {
   
   // Use actual variants from product, or default to main product
   const variants = React.useMemo(() => {
-    console.log('Product variants:', product?.variants);
     if (product?.variants && product.variants.length > 0) {
-      console.log('Using product variants:', product.variants);
       return product.variants;
     }
     // If no variants, create a default one from the main product
-    console.log('No variants found, using default');
     return [{ id: product?.id || '', title: 'Default', price: product?.price || '0' }];
   }, [product?.variants, product?.id, product?.price]);
   

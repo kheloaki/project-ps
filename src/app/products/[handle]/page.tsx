@@ -165,17 +165,7 @@ export default async function ProductPage({ params }: { params: { handle: string
         });
       }
       
-      const imagesArray = Array.from(imageSet);
-      // Debug: log images for troubleshooting
-      console.log('Product images collected:', {
-        productImagesArray: (dbProduct as any).images || [],
-        mainImage: dbProduct.image,
-        variantCount: dbProduct.variants?.length || 0,
-        variantImages: dbProduct.variants?.map((v: any) => v.image).filter(Boolean) || [],
-        totalImages: imagesArray.length,
-        images: imagesArray
-      });
-      return imagesArray;
+      return Array.from(imageSet);
     })(),
     sections: {
       productHero: true,
