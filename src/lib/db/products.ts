@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import type { Product, ProductVariant } from '@prisma/client';
 
 export type ProductWithVariants = Product & {
@@ -22,13 +23,70 @@ export async function getAllProducts(): Promise<ProductWithVariants[]> {
 /**
  * Get a product by handle
  */
+/**
+ * Get a product by handle
+ */
 export async function getProductByHandle(handle: string): Promise<ProductWithVariants | null> {
-  return prisma.product.findUnique({
-    where: { handle },
-    include: {
-      variants: true,
-    },
+  // Try Prisma query first (should work if Prisma client is updated)
+  try {
+    const product = await prisma.product.findUnique({
+      where: { handle },
+      include: {
+        variants: true,
+      },
+    });
+    
+    if (product) {
+      // Parse FAQs if it's a string
+      if ((product as any).faqs) {
+        if (typeof (product as any).faqs === 'string') {
+          try {
+            (product as any).faqs = JSON.parse((product as any).faqs);
+          } catch (e) {
+            (product as any).faqs = null;
+          }
+        }
+      }
+      return product as ProductWithVariants;
+    }
+  } catch (error) {
+    // Fallback to raw SQL if Prisma query fails
+    console.log('Prisma query failed, using raw SQL fallback');
+  }
+  
+  // Fallback: Use raw SQL to ensure FAQs JSON field is properly returned
+  const rawProduct = await prisma.$queryRaw<Array<any>>(
+    Prisma.sql`SELECT * FROM products WHERE handle = ${handle} LIMIT 1`
+  );
+  
+  if (!rawProduct || rawProduct.length === 0) {
+    return null;
+  }
+  
+  const productData = rawProduct[0];
+  
+  // Parse FAQs if it's a string (PostgreSQL returns JSON as string sometimes)
+  if (productData.faqs) {
+    if (typeof productData.faqs === 'string') {
+      try {
+        productData.faqs = JSON.parse(productData.faqs);
+      } catch (e) {
+        productData.faqs = null;
+      }
+    }
+  } else {
+    productData.faqs = null;
+  }
+  
+  // Get variants
+  const variants = await prisma.productVariant.findMany({
+    where: { productId: productData.id },
   });
+  
+  return {
+    ...productData,
+    variants,
+  } as ProductWithVariants;
 }
 
 /**

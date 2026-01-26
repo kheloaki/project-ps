@@ -10,6 +10,7 @@ import ProductDetails from '@/components/sections/product-details';
 import CoAResourceSection from '@/components/sections/coa-resource';
 import CustomSection from '@/components/sections/custom-section';
 import CompanyTrustBadges from '@/components/sections/company-trust-badges';
+import ProductFAQs from '@/components/sections/product-faqs';
 import { CartButtonWrapper } from '@/components/cart/cart-button-wrapper';
 
 interface Variant {
@@ -38,6 +39,7 @@ interface Product {
   seoDescription?: string;
   category: string;
   coaImageUrl?: string;
+  faqs?: Array<{ question: string; answer: string }>;
   variants?: Variant[];
   images?: string[];
   sections?: {
@@ -99,6 +101,20 @@ export default async function ProductPage({ params }: { params: { handle: string
     seoDescription: dbProduct.seoDescription || undefined,
     category: dbProduct.category,
     coaImageUrl: (dbProduct as any).coaImageUrl || undefined,
+    faqs: (() => {
+      const faqsData = (dbProduct as any).faqs;
+      if (!faqsData) return undefined;
+      // Handle both JSON string and array
+      if (typeof faqsData === 'string') {
+        try {
+          const parsed = JSON.parse(faqsData);
+          return Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+      return Array.isArray(faqsData) && faqsData.length > 0 ? faqsData : undefined;
+    })(),
     variants: (dbProduct.variants && dbProduct.variants.length > 0) 
       ? dbProduct.variants.map((v) => ({
           id: v.id,
@@ -202,6 +218,11 @@ export default async function ProductPage({ params }: { params: { handle: string
               enabled={product.sections?.customSection?.enabled || product.customSection?.enabled || false}
             />
           </div>
+
+          {/* Product FAQs Section */}
+          {product.faqs && product.faqs.length > 0 && (
+            <ProductFAQs faqs={product.faqs} />
+          )}
           
           {/* Company Trust Badges - enabled by default */}
           {(product.sections?.companyTrustBadges !== false) && (

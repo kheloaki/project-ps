@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requireAdmin } from '@/lib/admin';
 import { getProductById } from '@/lib/db/products';
 
@@ -15,16 +16,64 @@ export async function GET(
     await requireAdmin();
 
     const { id } = await params;
-    const product = await getProductById(id);
-
-    if (!product) {
+    
+    // Fetch product with FAQs - try Prisma first, fallback to raw SQL
+    try {
+      const product = await prisma.product.findUnique({
+        where: { id },
+        include: { variants: true },
+      });
+      if (product) {
+        // Parse FAQs if it's a string
+        if ((product as any).faqs && typeof (product as any).faqs === 'string') {
+          try {
+            (product as any).faqs = JSON.parse((product as any).faqs);
+          } catch (e) {
+            (product as any).faqs = null;
+          }
+        }
+        return NextResponse.json(product);
+      }
+    } catch (error) {
+      console.log('Prisma query failed, using raw SQL fallback');
+    }
+    
+    // Fallback: Use raw SQL
+    const rawProduct = await prisma.$queryRaw<Array<any>>(
+      Prisma.sql`SELECT * FROM products WHERE id = ${id} LIMIT 1`
+    );
+    
+    if (!rawProduct || rawProduct.length === 0) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
       );
     }
-
-    return NextResponse.json(product);
+    
+    const fetchedProduct = rawProduct[0];
+    
+    // Parse FAQs if it's a string (PostgreSQL returns JSON as string sometimes)
+    if (fetchedProduct.faqs) {
+      if (typeof fetchedProduct.faqs === 'string') {
+        try {
+          fetchedProduct.faqs = JSON.parse(fetchedProduct.faqs);
+        } catch (e) {
+          fetchedProduct.faqs = null;
+        }
+      }
+    } else {
+      fetchedProduct.faqs = null;
+    }
+    
+    // Get variants
+    const variants = await prisma.productVariant.findMany({
+      where: { productId: id },
+    });
+    
+    return NextResponse.json({
+      ...fetchedProduct,
+      variants,
+    });
   } catch (error: any) {
     console.error('Error fetching product:', error);
     
@@ -55,6 +104,8 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    console.log('Received update request body:', JSON.stringify(body, null, 2));
+    
     const {
       handle,
       title,
@@ -71,6 +122,8 @@ export async function PUT(
       images = [],
       variants = [],
     } = body;
+    
+    console.log('Extracted FAQs from request:', faqs, 'Type:', typeof faqs, 'IsArray:', Array.isArray(faqs), 'Length:', Array.isArray(faqs) ? faqs.length : 'N/A');
 
     // Validate required fields
     if (!handle || !title || !price || !image || !description || !category) {
@@ -145,42 +198,86 @@ export async function PUT(
 
     // Update isPopular and FAQs separately using raw SQL (workaround for old Prisma client)
     try {
-      const updates: string[] = [];
-      const params: any[] = [];
-      let paramIndex = 1;
+      console.log('Updating product fields:', { isPopular, faqs, faqsType: typeof faqs, faqsIsArray: Array.isArray(faqs) });
 
+      // Build update queries separately for better error handling
       if (isPopular !== undefined) {
-        updates.push(`"isPopular" = $${paramIndex}`);
-        params.push(Boolean(isPopular));
-        paramIndex++;
+        await prisma.$executeRaw`
+          UPDATE products 
+          SET "isPopular" = ${Boolean(isPopular)}
+          WHERE id = ${id}
+        `;
+        console.log('Updated isPopular:', Boolean(isPopular));
       }
 
       if (faqs !== undefined) {
-        updates.push(`"faqs" = $${paramIndex}`);
         if (Array.isArray(faqs) && faqs.length > 0) {
-          params.push(JSON.stringify(faqs));
+          const faqsToSave = faqs.filter(faq => faq && faq.question && faq.answer && faq.question.trim() && faq.answer.trim());
+          if (faqsToSave.length > 0) {
+            const faqsJson = JSON.stringify(faqsToSave);
+            // Use $executeRawUnsafe for JSON casting
+            await prisma.$executeRawUnsafe(
+              `UPDATE products SET "faqs" = $1::jsonb WHERE id = $2`,
+              faqsJson,
+              id
+            );
+            console.log('Saved FAQs:', faqsToSave.length, 'items', faqsToSave);
+          } else {
+            await prisma.$executeRaw`
+              UPDATE products 
+              SET "faqs" = NULL
+              WHERE id = ${id}
+            `;
+            console.log('No valid FAQs to save (all filtered out), set to NULL');
+          }
         } else {
-          params.push(null);
+          await prisma.$executeRaw`
+            UPDATE products 
+            SET "faqs" = NULL
+            WHERE id = ${id}
+          `;
+          console.log('FAQs is not an array or is empty, set to NULL');
         }
-        paramIndex++;
       }
-
-      if (updates.length > 0) {
-        const query = `UPDATE products SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
-        await prisma.$executeRawUnsafe(query, ...params, id);
+      
+      // Re-fetch product to include updated fields using raw SQL to get FAQs
+      const rawProduct = await prisma.$queryRaw<Array<any>>(
+        Prisma.sql`SELECT * FROM products WHERE id = ${id} LIMIT 1`
+      );
+      
+      if (rawProduct && rawProduct.length > 0) {
+        const productData = rawProduct[0];
+        console.log('Fetched product FAQs (raw):', productData.faqs, 'type:', typeof productData.faqs);
         
-        // Re-fetch product to include updated fields
-        const updatedProduct = await prisma.product.findUnique({
-          where: { id },
-          include: { variants: true },
-        });
-        if (updatedProduct) {
-          return NextResponse.json(updatedProduct);
+        // Parse FAQs if it's a string (PostgreSQL returns JSON as string sometimes)
+        if (productData.faqs) {
+          if (typeof productData.faqs === 'string') {
+            try {
+              productData.faqs = JSON.parse(productData.faqs);
+              console.log('Parsed FAQs from string:', productData.faqs);
+            } catch (e) {
+              console.error('Error parsing FAQs:', e);
+              productData.faqs = null;
+            }
+          }
+        } else {
+          productData.faqs = null;
         }
+        
+        // Get variants
+        const variants = await prisma.productVariant.findMany({
+          where: { productId: id },
+        });
+        
+        console.log('Returning product with FAQs:', productData.faqs);
+        return NextResponse.json({
+          ...productData,
+          variants,
+        });
       }
     } catch (error) {
       console.error('Error updating product fields:', error);
-      // Continue even if update fails
+      // Continue even if update fails - return the product without the updated fields
     }
 
     return NextResponse.json(product);
