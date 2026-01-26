@@ -25,11 +25,13 @@ const ProductCard = ({ product }: { product: Product }) => {
   return (
     <div className="flex flex-col group cursor-pointer border-r border-b border-[#e5e5e5]">
       <a href={link} className="block overflow-hidden bg-[#f3f3f3] aspect-square relative">
-        <div className="w-full h-full flex items-center justify-center p-8 transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-105">
-          <img
+        <div className="w-full h-full flex items-center justify-center p-8 transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-105 relative">
+          <Image
             src={product.image}
             alt={product.title}
-            className="w-full h-full object-contain"
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
             loading="lazy"
           />
         </div>

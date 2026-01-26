@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { CometCard } from "@/components/ui/comet-card";
 import { useCart } from "@/hooks/use-cart";
 import { ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
@@ -68,11 +69,13 @@ const ProductCard = ({ product }: { product: Product }) => {
             className="block flex-1"
           >
             <div className="block overflow-hidden bg-[#f3f3f3] aspect-square relative">
-              <div className="w-full h-full flex items-center justify-center p-2 transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-105">
-                <img
+              <div className="w-full h-full flex items-center justify-center p-2 transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-105 relative">
+                <Image
                   src={product.image}
                   alt={product.title}
-                  className="w-full h-full object-contain"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
                   loading="lazy"
                 />
               </div>
