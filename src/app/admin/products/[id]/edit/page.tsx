@@ -44,6 +44,9 @@ export default function EditProductPage() {
   const [uploadedImages, setUploadedImages] = useState<ImageMetadata[]>([]);
   const [tags, setTags] = useState<string[]>(['']);
   const [faqs, setFaqs] = useState<Array<{ question: string; answer: string }>>([{ question: '', answer: '' }]);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkImportText, setBulkImportText] = useState('');
+  const [bulkImportMethod, setBulkImportMethod] = useState<'json' | 'text'>('text');
   
   // Sections data
   const [characteristics, setCharacteristics] = useState<Array<{ label: string; value: string }>>([
@@ -228,6 +231,13 @@ export default function EditProductPage() {
           })));
         }
 
+        // Set FAQs
+        if (product.faqs && Array.isArray(product.faqs) && product.faqs.length > 0) {
+          setFaqs(product.faqs);
+        } else {
+          setFaqs([{ question: '', answer: '' }]);
+        }
+
         // Parse bodyHtml to extract sections
         if (product.bodyHtml) {
           parseBodyHtmlToSections(product.bodyHtml);
@@ -408,6 +418,74 @@ export default function EditProductPage() {
     setFaqs(updated);
   };
 
+  const handleBulkImport = () => {
+    if (!bulkImportText.trim()) {
+      toast.error('Please enter FAQs to import');
+      return;
+    }
+
+    try {
+      let importedFaqs: Array<{ question: string; answer: string }> = [];
+
+      if (bulkImportMethod === 'json') {
+        // Method 1: JSON format
+        const parsed = JSON.parse(bulkImportText);
+        if (Array.isArray(parsed)) {
+          importedFaqs = parsed.map((item: any) => ({
+            question: item.question || item.q || '',
+            answer: item.answer || item.a || '',
+          })).filter((faq: any) => faq.question && faq.answer);
+        } else {
+          throw new Error('JSON must be an array');
+        }
+      } else {
+        // Method 2: Simple text format (Q: question, A: answer)
+        const lines = bulkImportText.split('\n').filter(line => line.trim());
+        let currentQuestion = '';
+        let currentAnswer = '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.match(/^Q[:\-]?\s*/i)) {
+            // Save previous FAQ if exists
+            if (currentQuestion && currentAnswer) {
+              importedFaqs.push({ question: currentQuestion, answer: currentAnswer });
+            }
+            currentQuestion = trimmed.replace(/^Q[:\-]?\s*/i, '').trim();
+            currentAnswer = '';
+          } else if (trimmed.match(/^A[:\-]?\s*/i)) {
+            currentAnswer = trimmed.replace(/^A[:\-]?\s*/i, '').trim();
+          } else if (currentQuestion && !currentAnswer) {
+            // If we have a question but no answer yet, this line is part of the question
+            currentQuestion += (currentQuestion ? ' ' : '') + trimmed;
+          } else if (currentAnswer !== undefined) {
+            // If we have an answer, this line is part of the answer
+            currentAnswer += (currentAnswer ? ' ' : '') + trimmed;
+          }
+        }
+
+        // Add the last FAQ
+        if (currentQuestion && currentAnswer) {
+          importedFaqs.push({ question: currentQuestion, answer: currentAnswer });
+        }
+      }
+
+      if (importedFaqs.length === 0) {
+        toast.error('No valid FAQs found. Please check your format.');
+        return;
+      }
+
+      // Replace existing FAQs or append based on user preference
+      setFaqs(importedFaqs);
+      setBulkImportText('');
+      setShowBulkImport(false);
+      toast.success(`Successfully imported ${importedFaqs.length} FAQ(s)`);
+    } catch (error: any) {
+      toast.error(`Import failed: ${error.message}`);
+      console.error('Bulk import error:', error);
+    }
+  };
+
   const generateHandle = () => {
     const handle = formData.title
       .toLowerCase()
@@ -481,6 +559,8 @@ export default function EditProductPage() {
           ...formData,
           bodyHtml: bodyHtml || formData.bodyHtml,
           images: uploadedImages.map(img => img.url), // Send array of image URLs
+          isPopular: formData.isPopular,
+          faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()), // Only send FAQs with both question and answer
           variants: variants.map(v => ({
             title: v.title,
             price: v.price,
@@ -1414,6 +1494,128 @@ export default function EditProductPage() {
             {/* FAQs Tab */}
             {activeTab === 'faqs' && (
               <div className="space-y-4">
+                {/* Bulk Import Section */}
+                <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">Bulk Import FAQs</h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBulkImport(!showBulkImport);
+                        if (!showBulkImport) {
+                          setBulkImportText('');
+                        }
+                      }}
+                      className="text-sm text-teal-600 hover:text-teal-700"
+                    >
+                      {showBulkImport ? 'Hide' : 'Show'} Bulk Import
+                    </button>
+                  </div>
+
+                  {showBulkImport && (
+                    <div className="space-y-3">
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBulkImportMethod('text')}
+                          className={`px-3 py-1.5 text-xs rounded ${
+                            bulkImportMethod === 'text'
+                              ? 'bg-teal-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300'
+                          }`}
+                        >
+                          Method 1: Text Format
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBulkImportMethod('json')}
+                          className={`px-3 py-1.5 text-xs rounded ${
+                            bulkImportMethod === 'json'
+                              ? 'bg-teal-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300'
+                          }`}
+                        >
+                          Method 2: JSON Format
+                        </button>
+                      </div>
+
+                      {bulkImportMethod === 'text' ? (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Text Format (Q: Question, A: Answer)
+                          </label>
+                          <Textarea
+                            value={bulkImportText}
+                            onChange={(e) => setBulkImportText(e.target.value)}
+                            rows={8}
+                            className="w-full text-sm font-mono"
+                            placeholder={`Q: What is this product?
+A: This is a research peptide.
+
+Q: How should I store it?
+A: Store in a cool, dry place.
+
+Q: What is the purity?
+A: 99%+ purity verified.`}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Format: Start each question with "Q:" or "Q-" and each answer with "A:" or "A-"
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            JSON Format
+                          </label>
+                          <Textarea
+                            value={bulkImportText}
+                            onChange={(e) => setBulkImportText(e.target.value)}
+                            rows={8}
+                            className="w-full text-sm font-mono"
+                            placeholder={`[
+  {
+    "question": "What is this product?",
+    "answer": "This is a research peptide."
+  },
+  {
+    "question": "How should I store it?",
+    "answer": "Store in a cool, dry place."
+  }
+]`}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Format: JSON array with objects containing "question" and "answer" fields
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleBulkImport}
+                          className="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                        >
+                          Import FAQs
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBulkImportText('');
+                            setShowBulkImport(false);
+                          }}
+                          className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Individual FAQs</h3>
+                </div>
+
                 {faqs.map((faq, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between mb-2">

@@ -67,6 +67,7 @@ export async function PUT(
       category,
       coaImageUrl,
       isPopular = false,
+      faqs = [],
       images = [],
       variants = [],
     } = body;
@@ -123,6 +124,7 @@ export async function PUT(
       seoDescription: seoDescription || null,
       category,
       coaImageUrl: coaImageUrl || null,
+      faqs: Array.isArray(faqs) && faqs.length > 0 ? faqs : null,
       variants: {
         create: variants.map((variant: any) => ({
           title: variant.title,
@@ -142,15 +144,31 @@ export async function PUT(
       },
     });
 
-    // Update isPopular separately using raw SQL (workaround for old Prisma client)
-    if (isPopular !== undefined) {
-      try {
-        await prisma.$executeRaw`
-          UPDATE products 
-          SET "isPopular" = ${Boolean(isPopular)} 
-          WHERE id = ${id}
-        `;
-        // Re-fetch product to include updated isPopular
+    // Update isPopular and FAQs separately using raw SQL (workaround for old Prisma client)
+    try {
+      const updates: string[] = [];
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      if (isPopular !== undefined) {
+        updates.push(`"isPopular" = $${paramIndex}`);
+        params.push(Boolean(isPopular));
+        paramIndex++;
+      }
+
+      if (faqs !== undefined && Array.isArray(faqs)) {
+        updates.push(`"faqs" = $${paramIndex}`);
+        params.push(faqs.length > 0 ? JSON.stringify(faqs) : null);
+        paramIndex++;
+      }
+
+      if (updates.length > 0) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE products SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+          ...params,
+          id
+        );
+        // Re-fetch product to include updated fields
         const updatedProduct = await prisma.product.findUnique({
           where: { id },
           include: { variants: true },
@@ -158,10 +176,10 @@ export async function PUT(
         if (updatedProduct) {
           return NextResponse.json(updatedProduct);
         }
-      } catch (error) {
-        console.error('Error updating isPopular:', error);
-        // Continue even if isPopular update fails
       }
+    } catch (error) {
+      console.error('Error updating product fields:', error);
+      // Continue even if update fails
     }
 
     return NextResponse.json(product);
