@@ -48,34 +48,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prepare create data (without isPopular to avoid Prisma client issues)
+    const createData: any = {
+      handle,
+      title,
+      price,
+      image,
+      images: Array.isArray(images) ? images : [] as string[],
+      description,
+      bodyHtml: bodyHtml || null,
+      seoTitle: seoTitle || null,
+      seoDescription: seoDescription || null,
+      category,
+      coaImageUrl: coaImageUrl || null,
+      variants: {
+        create: variants.map((variant: any) => ({
+          title: variant.title,
+          price: variant.price,
+          sku: variant.sku || null,
+          image: variant.image || null,
+        })),
+      },
+    };
+
     // Create product with variants
     const product = await prisma.product.create({
-      data: {
-        handle,
-        title,
-        price,
-        image,
-        images: Array.isArray(images) ? images : [] as string[],
-        description,
-        bodyHtml: bodyHtml || null,
-        seoTitle: seoTitle || null,
-        seoDescription: seoDescription || null,
-        category,
-        coaImageUrl: coaImageUrl || null,
-        isPopular: Boolean(isPopular),
-        variants: {
-          create: variants.map((variant: any) => ({
-            title: variant.title,
-            price: variant.price,
-            sku: variant.sku || null,
-            image: variant.image || null,
-          })),
-        },
-      } as any, // Type assertion to handle images array field
+      data: createData,
       include: {
         variants: true,
       },
     });
+
+    // Update isPopular separately using raw SQL (workaround for old Prisma client)
+    if (isPopular !== undefined && product.id) {
+      try {
+        await prisma.$executeRaw`
+          UPDATE products 
+          SET "isPopular" = ${Boolean(isPopular)} 
+          WHERE id = ${product.id}
+        `;
+        // Re-fetch product to include updated isPopular
+        const updatedProduct = await prisma.product.findUnique({
+          where: { id: product.id },
+          include: { variants: true },
+        });
+        if (updatedProduct) {
+          return NextResponse.json(updatedProduct, { status: 201 });
+        }
+      } catch (error) {
+        console.error('Error updating isPopular:', error);
+        // Continue even if isPopular update fails
+      }
+    }
 
     return NextResponse.json(product, { status: 201 });
   } catch (error: any) {
