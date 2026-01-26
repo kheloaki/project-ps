@@ -27,36 +27,11 @@ export async function getAllProducts(): Promise<ProductWithVariants[]> {
  * Get a product by handle
  */
 export async function getProductByHandle(handle: string): Promise<ProductWithVariants | null> {
-  // Try Prisma query first (should work if Prisma client is updated)
-  try {
-    const product = await prisma.product.findUnique({
-      where: { handle },
-      include: {
-        variants: true,
-      },
-    });
-    
-    if (product) {
-      // Parse FAQs if it's a string
-      if ((product as any).faqs) {
-        if (typeof (product as any).faqs === 'string') {
-          try {
-            (product as any).faqs = JSON.parse((product as any).faqs);
-          } catch (e) {
-            (product as any).faqs = null;
-          }
-        }
-      }
-      return product as ProductWithVariants;
-    }
-  } catch (error) {
-    // Fallback to raw SQL if Prisma query fails
-    console.log('Prisma query failed, using raw SQL fallback');
-  }
-  
-  // Fallback: Use raw SQL to ensure FAQs JSON field is properly returned
+  // Always use raw SQL to ensure FAQs are included (works in both dev and production)
+  // This bypasses Prisma client caching issues in production
+  // Explicitly select faqs as text to ensure proper type handling
   const rawProduct = await prisma.$queryRaw<Array<any>>(
-    Prisma.sql`SELECT * FROM products WHERE handle = ${handle} LIMIT 1`
+    Prisma.sql`SELECT *, "faqs"::text as faqs_text FROM products WHERE handle = ${handle} LIMIT 1`
   );
   
   if (!rawProduct || rawProduct.length === 0) {
@@ -65,18 +40,44 @@ export async function getProductByHandle(handle: string): Promise<ProductWithVar
   
   const productData = rawProduct[0];
   
-  // Parse FAQs if it's a string (PostgreSQL returns JSON as string sometimes)
-  if (productData.faqs) {
-    if (typeof productData.faqs === 'string') {
+  // Use faqs_text if available (from explicit cast), otherwise use faqs
+  const faqsRaw = productData.faqs_text || productData.faqs;
+  
+  // Parse FAQs - PostgreSQL JSONB can be returned as string, object, or array
+  try {
+    if (faqsRaw === null || faqsRaw === undefined) {
+      productData.faqs = null;
+    } else if (typeof faqsRaw === 'string') {
+      // If it's a string, try to parse it
       try {
-        productData.faqs = JSON.parse(productData.faqs);
+        const parsed = JSON.parse(faqsRaw);
+        productData.faqs = Array.isArray(parsed) ? parsed : null;
       } catch (e) {
+        console.error('Error parsing FAQs from string:', e, 'Raw value:', faqsRaw);
         productData.faqs = null;
       }
+    } else if (Array.isArray(faqsRaw)) {
+      // Already an array, validate it
+      productData.faqs = faqsRaw.length > 0 ? faqsRaw : null;
+    } else if (typeof faqsRaw === 'object') {
+      // Might be a JSON object
+      if (Array.isArray(faqsRaw)) {
+        productData.faqs = faqsRaw.length > 0 ? faqsRaw : null;
+      } else {
+        console.warn('FAQs is an object but not an array:', faqsRaw);
+        productData.faqs = null;
+      }
+    } else {
+      console.warn('Unexpected FAQs type:', typeof faqsRaw, faqsRaw);
+      productData.faqs = null;
     }
-  } else {
+  } catch (error) {
+    console.error('Error processing FAQs:', error, 'Raw value:', faqsRaw);
     productData.faqs = null;
   }
+  
+  // Remove the temporary faqs_text field
+  delete productData.faqs_text;
   
   // Get variants
   const variants = await prisma.productVariant.findMany({

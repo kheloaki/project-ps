@@ -103,17 +103,35 @@ export default async function ProductPage({ params }: { params: { handle: string
     coaImageUrl: (dbProduct as any).coaImageUrl || undefined,
     faqs: (() => {
       const faqsData = (dbProduct as any).faqs;
-      if (!faqsData) return undefined;
-      // Handle both JSON string and array
+      
+      // Handle null/undefined
+      if (faqsData === null || faqsData === undefined) {
+        return undefined;
+      }
+      
+      // Handle string (JSON string from database)
       if (typeof faqsData === 'string') {
         try {
           const parsed = JSON.parse(faqsData);
           return Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined;
-        } catch {
+        } catch (e) {
+          console.error('Error parsing FAQs in product page:', e);
           return undefined;
         }
       }
-      return Array.isArray(faqsData) && faqsData.length > 0 ? faqsData : undefined;
+      
+      // Handle array
+      if (Array.isArray(faqsData)) {
+        return faqsData.length > 0 ? faqsData : undefined;
+      }
+      
+      // Handle object (shouldn't happen, but just in case)
+      if (typeof faqsData === 'object') {
+        console.warn('FAQs is an object but not an array:', faqsData);
+        return undefined;
+      }
+      
+      return undefined;
     })(),
     variants: (dbProduct.variants && dbProduct.variants.length > 0) 
       ? dbProduct.variants.map((v) => ({

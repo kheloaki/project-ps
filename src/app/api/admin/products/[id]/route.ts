@@ -17,28 +17,8 @@ export async function GET(
 
     const { id } = await params;
     
-    // Fetch product with FAQs - try Prisma first, fallback to raw SQL
-    try {
-      const product = await prisma.product.findUnique({
-        where: { id },
-        include: { variants: true },
-      });
-      if (product) {
-        // Parse FAQs if it's a string
-        if ((product as any).faqs && typeof (product as any).faqs === 'string') {
-          try {
-            (product as any).faqs = JSON.parse((product as any).faqs);
-          } catch (e) {
-            (product as any).faqs = null;
-          }
-        }
-        return NextResponse.json(product);
-      }
-    } catch (error) {
-      console.log('Prisma query failed, using raw SQL fallback');
-    }
-    
-    // Fallback: Use raw SQL
+    // Always use raw SQL to ensure FAQs are included (works in both dev and production)
+    // This bypasses Prisma client caching issues in production
     const rawProduct = await prisma.$queryRaw<Array<any>>(
       Prisma.sql`SELECT * FROM products WHERE id = ${id} LIMIT 1`
     );
@@ -52,16 +32,36 @@ export async function GET(
     
     const fetchedProduct = rawProduct[0];
     
-    // Parse FAQs if it's a string (PostgreSQL returns JSON as string sometimes)
-    if (fetchedProduct.faqs) {
-      if (typeof fetchedProduct.faqs === 'string') {
+    // Parse FAQs - PostgreSQL JSONB can be returned as string, object, or array
+    try {
+      if (fetchedProduct.faqs === null || fetchedProduct.faqs === undefined) {
+        fetchedProduct.faqs = null;
+      } else if (typeof fetchedProduct.faqs === 'string') {
+        // If it's a string, try to parse it
         try {
-          fetchedProduct.faqs = JSON.parse(fetchedProduct.faqs);
+          const parsed = JSON.parse(fetchedProduct.faqs);
+          fetchedProduct.faqs = Array.isArray(parsed) ? parsed : null;
         } catch (e) {
+          console.error('Error parsing FAQs from string:', e, 'Raw value:', fetchedProduct.faqs);
           fetchedProduct.faqs = null;
         }
+      } else if (Array.isArray(fetchedProduct.faqs)) {
+        // Already an array, validate it
+        fetchedProduct.faqs = fetchedProduct.faqs.length > 0 ? fetchedProduct.faqs : null;
+      } else if (typeof fetchedProduct.faqs === 'object') {
+        // Might be a JSON object
+        if (Array.isArray(fetchedProduct.faqs)) {
+          fetchedProduct.faqs = fetchedProduct.faqs.length > 0 ? fetchedProduct.faqs : null;
+        } else {
+          console.warn('FAQs is an object but not an array:', fetchedProduct.faqs);
+          fetchedProduct.faqs = null;
+        }
+      } else {
+        console.warn('Unexpected FAQs type:', typeof fetchedProduct.faqs, fetchedProduct.faqs);
+        fetchedProduct.faqs = null;
       }
-    } else {
+    } catch (error) {
+      console.error('Error processing FAQs:', error, 'Raw value:', fetchedProduct.faqs);
       fetchedProduct.faqs = null;
     }
     
@@ -241,28 +241,56 @@ export async function PUT(
       }
       
       // Re-fetch product to include updated fields using raw SQL to get FAQs
+      // Explicitly select faqs as jsonb to ensure proper type handling
       const rawProduct = await prisma.$queryRaw<Array<any>>(
-        Prisma.sql`SELECT * FROM products WHERE id = ${id} LIMIT 1`
+        Prisma.sql`SELECT *, "faqs"::text as faqs_text FROM products WHERE id = ${id} LIMIT 1`
       );
       
       if (rawProduct && rawProduct.length > 0) {
         const productData = rawProduct[0];
-        console.log('Fetched product FAQs (raw):', productData.faqs, 'type:', typeof productData.faqs);
         
-        // Parse FAQs if it's a string (PostgreSQL returns JSON as string sometimes)
-        if (productData.faqs) {
-          if (typeof productData.faqs === 'string') {
+        // Use faqs_text if available (from explicit cast), otherwise use faqs
+        const faqsRaw = productData.faqs_text || productData.faqs;
+        console.log('Fetched product FAQs (raw):', faqsRaw, 'type:', typeof faqsRaw);
+        console.log('Fetched product FAQs (original):', productData.faqs, 'type:', typeof productData.faqs);
+        
+        // Parse FAQs - PostgreSQL JSONB can be returned as string, object, or array
+        try {
+          if (faqsRaw === null || faqsRaw === undefined) {
+            productData.faqs = null;
+          } else if (typeof faqsRaw === 'string') {
+            // If it's a string, try to parse it
             try {
-              productData.faqs = JSON.parse(productData.faqs);
+              const parsed = JSON.parse(faqsRaw);
+              productData.faqs = Array.isArray(parsed) ? parsed : null;
               console.log('Parsed FAQs from string:', productData.faqs);
             } catch (e) {
-              console.error('Error parsing FAQs:', e);
+              console.error('Error parsing FAQs from string:', e, 'Raw value:', faqsRaw);
               productData.faqs = null;
             }
+          } else if (Array.isArray(faqsRaw)) {
+            // Already an array, validate it
+            productData.faqs = faqsRaw.length > 0 ? faqsRaw : null;
+            console.log('FAQs is already an array:', productData.faqs);
+          } else if (typeof faqsRaw === 'object') {
+            // Might be a JSON object
+            if (Array.isArray(faqsRaw)) {
+              productData.faqs = faqsRaw.length > 0 ? faqsRaw : null;
+            } else {
+              console.warn('FAQs is an object but not an array:', faqsRaw);
+              productData.faqs = null;
+            }
+          } else {
+            console.warn('Unexpected FAQs type:', typeof faqsRaw, faqsRaw);
+            productData.faqs = null;
           }
-        } else {
+        } catch (error) {
+          console.error('Error processing FAQs:', error, 'Raw value:', faqsRaw);
           productData.faqs = null;
         }
+        
+        // Remove the temporary faqs_text field
+        delete productData.faqs_text;
         
         // Get variants
         const variants = await prisma.productVariant.findMany({
