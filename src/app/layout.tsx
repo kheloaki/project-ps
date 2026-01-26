@@ -11,6 +11,7 @@ import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { DisableRightClick } from "@/components/disable-right-click";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
             <CartSidebarWrapper />
             <Toaster position="top-center" />
           </CartProvider>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
