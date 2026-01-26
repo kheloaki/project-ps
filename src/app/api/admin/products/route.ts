@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare create data (without isPopular to avoid Prisma client issues)
+    // Prepare create data (without isPopular and faqs to avoid Prisma client issues)
     const createData: any = {
       handle,
       title,
@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
       seoDescription: seoDescription || null,
       category,
       coaImageUrl: coaImageUrl || null,
-      faqs: Array.isArray(faqs) && faqs.length > 0 ? faqs : null,
       variants: {
         create: variants.map((variant: any) => ({
           title: variant.title,
@@ -94,18 +93,20 @@ export async function POST(request: NextRequest) {
           paramIndex++;
         }
 
-        if (faqs !== undefined && Array.isArray(faqs)) {
+        if (faqs !== undefined) {
           updates.push(`"faqs" = $${paramIndex}`);
-          params.push(faqs.length > 0 ? JSON.stringify(faqs) : null);
+          if (Array.isArray(faqs) && faqs.length > 0) {
+            params.push(JSON.stringify(faqs));
+          } else {
+            params.push(null);
+          }
           paramIndex++;
         }
 
         if (updates.length > 0) {
-          await prisma.$executeRawUnsafe(
-            `UPDATE products SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-            ...params,
-            product.id
-          );
+          const query = `UPDATE products SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+          await prisma.$executeRawUnsafe(query, ...params, product.id);
+          
           // Re-fetch product to include updated fields
           const updatedProduct = await prisma.product.findUnique({
             where: { id: product.id },
