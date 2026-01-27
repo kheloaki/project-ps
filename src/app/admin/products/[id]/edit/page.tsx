@@ -550,40 +550,55 @@ export default function EditProductPage() {
     try {
       const bodyHtml = buildBodyHtml();
       
+      // Ensure main image is set from uploaded images if not already set
+      const mainImage = formData.image || (uploadedImages.length > 0 ? uploadedImages[0].url : '');
+      const imageArray = uploadedImages.length > 0 
+        ? uploadedImages.map(img => img.url)
+        : (formData.image ? [formData.image] : []);
+      
+      // Prepare the request body
+      const requestBody = {
+        ...formData,
+        image: mainImage, // Ensure main image is set
+        bodyHtml: bodyHtml || formData.bodyHtml || null,
+        images: imageArray, // Send array of image URLs
+        isPopular: formData.isPopular || false,
+        seoTitle: formData.seoTitle || null,
+        seoDescription: formData.seoDescription || null,
+        coaImageUrl: formData.coaImageUrl || null,
+        faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()), // Only send FAQs with both question and answer
+        variants: variants.map(v => ({
+          title: v.title,
+          price: v.price,
+          sku: v.sku || undefined,
+          image: v.image || undefined,
+        })),
+        sections: {
+          productHero: sections.productHero,
+          productDetails: sections.productDetails,
+          coaResource: sections.coaResource,
+          companyTrustBadges: sections.companyTrustBadges,
+          customSection: customSection.enabled ? {
+            enabled: true,
+            title: customSection.title || undefined,
+            content: customSection.content || undefined,
+          } : undefined,
+        },
+      };
+      
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          bodyHtml: bodyHtml || formData.bodyHtml,
-          images: uploadedImages.map(img => img.url), // Send array of image URLs
-          isPopular: formData.isPopular,
-          faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()), // Only send FAQs with both question and answer
-          variants: variants.map(v => ({
-            title: v.title,
-            price: v.price,
-            sku: v.sku || undefined,
-            image: v.image || undefined,
-          })),
-          sections: {
-            productHero: sections.productHero,
-            productDetails: sections.productDetails,
-            coaResource: sections.coaResource,
-            companyTrustBadges: sections.companyTrustBadges,
-            customSection: customSection.enabled ? {
-              enabled: true,
-              title: customSection.title || undefined,
-              content: customSection.content || undefined,
-            } : undefined,
-          },
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to update product');
+        const errorMessage = error.error || 'Failed to update product';
+        const errorDetails = error.details ? `\nMissing: ${Object.entries(error.details).filter(([_, missing]) => missing).map(([field]) => field).join(', ')}` : '';
+        throw new Error(errorMessage + errorDetails);
       }
 
       const product = await response.json();

@@ -32,7 +32,17 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!handle || !title || !price || !image || !description || !category) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { 
+          error: 'Missing required fields',
+          details: {
+            handle: !handle,
+            title: !title,
+            price: !price,
+            image: !image,
+            description: !description,
+            category: !category,
+          }
+        },
         { status: 400 }
       );
     }
