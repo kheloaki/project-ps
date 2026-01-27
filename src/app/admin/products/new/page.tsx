@@ -389,6 +389,7 @@ export default function NewProductPage() {
         image: mainImage, // Ensure main image is set
         bodyHtml: bodyHtml || formData.bodyHtml || null,
         images: imageArray, // Send array of image URLs
+        imageMetadata: uploadedImages, // Send full image metadata objects
         isPopular: formData.isPopular || false,
         seoTitle: formData.seoTitle || null,
         seoDescription: formData.seoDescription || null,

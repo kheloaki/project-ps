@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       isPopular = false,
       faqs = [],
       images = [],
+      imageMetadata = [],
       variants = [],
     } = body;
 
@@ -107,6 +108,16 @@ export async function POST(request: NextRequest) {
           updates.push(`"faqs" = $${paramIndex}`);
           if (Array.isArray(faqs) && faqs.length > 0) {
             params.push(JSON.stringify(faqs));
+          } else {
+            params.push(null);
+          }
+          paramIndex++;
+        }
+
+        if (imageMetadata !== undefined) {
+          updates.push(`"imageMetadata" = $${paramIndex}`);
+          if (Array.isArray(imageMetadata) && imageMetadata.length > 0) {
+            params.push(JSON.stringify(imageMetadata));
           } else {
             params.push(null);
           }

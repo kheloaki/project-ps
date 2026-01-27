@@ -18,6 +18,7 @@ model Product {
   price          String
   image          String
   images         String[] // Array of image URLs for gallery
+  imageMetadata  Json?    // Array of {url: string, title?: string, alt?: string, caption?: string, description?: string}
   description    String   @db.Text
   bodyHtml       String?  @db.Text
   seoTitle       String?

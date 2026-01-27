@@ -16,9 +16,9 @@ export async function GET(
 
     const { id } = await params;
     
-    // Always use raw SQL to ensure FAQs are included (works in both dev and production)
+    // Always use raw SQL to ensure FAQs and imageMetadata are included (works in both dev and production)
     const rawProduct = await prisma.$queryRaw<Array<any>>(
-      Prisma.sql`SELECT *, "faqs"::text as faqs_text FROM products WHERE id = ${id} LIMIT 1`
+      Prisma.sql`SELECT *, "faqs"::text as faqs_text, "imageMetadata"::text as imageMetadata_text FROM products WHERE id = ${id} LIMIT 1`
     );
     
     if (!rawProduct || rawProduct.length === 0) {
@@ -56,6 +56,31 @@ export async function GET(
     }
     
     delete fetchedProduct.faqs_text;
+    
+    // Parse imageMetadata - PostgreSQL JSONB can be returned as string, object, or array
+    const imageMetadataRaw = fetchedProduct.imageMetadata_text || fetchedProduct.imageMetadata;
+    try {
+      if (imageMetadataRaw === null || imageMetadataRaw === undefined) {
+        fetchedProduct.imageMetadata = null;
+      } else if (typeof imageMetadataRaw === 'string') {
+        try {
+          const parsed = JSON.parse(imageMetadataRaw);
+          fetchedProduct.imageMetadata = Array.isArray(parsed) ? parsed : null;
+        } catch (e) {
+          console.error('Error parsing imageMetadata from string:', e);
+          fetchedProduct.imageMetadata = null;
+        }
+      } else if (Array.isArray(imageMetadataRaw)) {
+        fetchedProduct.imageMetadata = imageMetadataRaw.length > 0 ? imageMetadataRaw : null;
+      } else {
+        fetchedProduct.imageMetadata = null;
+      }
+    } catch (error) {
+      console.error('Error processing imageMetadata:', error);
+      fetchedProduct.imageMetadata = null;
+    }
+    
+    delete fetchedProduct.imageMetadata_text;
     
     // Get variants
     const variants = await prisma.productVariant.findMany({
@@ -111,6 +136,7 @@ export async function PUT(
       isPopular = false,
       faqs = [],
       images = [],
+      imageMetadata = [],
       variants = [],
     } = body;
 
@@ -230,10 +256,28 @@ export async function PUT(
           `;
         }
       }
+
+      // Update imageMetadata separately using raw SQL
+      if (imageMetadata !== undefined) {
+        if (Array.isArray(imageMetadata) && imageMetadata.length > 0) {
+          const imageMetadataJson = JSON.stringify(imageMetadata);
+          await prisma.$executeRawUnsafe(
+            `UPDATE products SET "imageMetadata" = $1::jsonb WHERE id = $2`,
+            imageMetadataJson,
+            id
+          );
+        } else {
+          await prisma.$executeRaw`
+            UPDATE products 
+            SET "imageMetadata" = NULL
+            WHERE id = ${id}
+          `;
+        }
+      }
       
       // Re-fetch product to include updated fields using raw SQL
       const rawProduct = await prisma.$queryRaw<Array<any>>(
-        Prisma.sql`SELECT *, "faqs"::text as faqs_text FROM products WHERE id = ${id} LIMIT 1`
+        Prisma.sql`SELECT *, "faqs"::text as faqs_text, "imageMetadata"::text as imageMetadata_text FROM products WHERE id = ${id} LIMIT 1`
       );
       
       if (rawProduct && rawProduct.length > 0) {
@@ -265,6 +309,31 @@ export async function PUT(
         }
         
         delete productData.faqs_text;
+        
+        // Parse imageMetadata - PostgreSQL JSONB can be returned as string, object, or array
+        const imageMetadataRaw = productData.imageMetadata_text || productData.imageMetadata;
+        try {
+          if (imageMetadataRaw === null || imageMetadataRaw === undefined) {
+            productData.imageMetadata = null;
+          } else if (typeof imageMetadataRaw === 'string') {
+            try {
+              const parsed = JSON.parse(imageMetadataRaw);
+              productData.imageMetadata = Array.isArray(parsed) ? parsed : null;
+            } catch (e) {
+              console.error('Error parsing imageMetadata from string:', e);
+              productData.imageMetadata = null;
+            }
+          } else if (Array.isArray(imageMetadataRaw)) {
+            productData.imageMetadata = imageMetadataRaw.length > 0 ? imageMetadataRaw : null;
+          } else {
+            productData.imageMetadata = null;
+          }
+        } catch (error) {
+          console.error('Error processing imageMetadata:', error);
+          productData.imageMetadata = null;
+        }
+        
+        delete productData.imageMetadata_text;
         
         const variants = await prisma.productVariant.findMany({
           where: { productId: id },

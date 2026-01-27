@@ -243,18 +243,34 @@ export default function EditProductPage() {
           parseBodyHtmlToSections(product.bodyHtml);
         }
 
-        // Set images - load from product.images array if available, otherwise use main image
-        const productImages = (product as any).images && Array.isArray((product as any).images) && (product as any).images.length > 0
-          ? (product as any).images
-          : product.image ? [product.image] : [];
+        // Set images - load from imageMetadata if available, otherwise from images array
+        let productImageMetadata: ImageMetadata[] = [];
         
-        setUploadedImages(productImages.map((imgUrl: string) => ({
-          url: imgUrl,
-          title: '',
-          alt: '',
-          caption: '',
-          description: '',
-        })));
+        if ((product as any).imageMetadata && Array.isArray((product as any).imageMetadata) && (product as any).imageMetadata.length > 0) {
+          // Use saved image metadata
+          productImageMetadata = (product as any).imageMetadata.map((img: any) => ({
+            url: img.url || '',
+            title: img.title || '',
+            alt: img.alt || '',
+            caption: img.caption || '',
+            description: img.description || '',
+          }));
+        } else {
+          // Fallback to images array or main image
+          const productImages = (product as any).images && Array.isArray((product as any).images) && (product as any).images.length > 0
+            ? (product as any).images
+            : product.image ? [product.image] : [];
+          
+          productImageMetadata = productImages.map((imgUrl: string) => ({
+            url: imgUrl,
+            title: '',
+            alt: '',
+            caption: '',
+            description: '',
+          }));
+        }
+        
+        setUploadedImages(productImageMetadata);
       } catch (error: any) {
         toast.error(error.message || 'Failed to load product');
         router.push('/admin/products');
@@ -562,6 +578,7 @@ export default function EditProductPage() {
         image: mainImage, // Ensure main image is set
         bodyHtml: bodyHtml || formData.bodyHtml || null,
         images: imageArray, // Send array of image URLs
+        imageMetadata: uploadedImages, // Send full image metadata objects
         isPopular: formData.isPopular || false,
         seoTitle: formData.seoTitle || null,
         seoDescription: formData.seoDescription || null,
