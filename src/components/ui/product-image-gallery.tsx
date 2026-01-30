@@ -4,12 +4,21 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 
+interface ImageMetadata {
+  url: string;
+  title?: string;
+  alt?: string;
+  caption?: string;
+  description?: string;
+}
+
 interface ProductImageGalleryProps {
   images: string[];
   productTitle: string;
+  imageMetadata?: ImageMetadata[];
 }
 
-const ProductImageGallery = ({ images, productTitle }: ProductImageGalleryProps) => {
+const ProductImageGallery = ({ images, productTitle, imageMetadata = [] }: ProductImageGalleryProps) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [thumbnailScrollIndex, setThumbnailScrollIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -27,17 +36,29 @@ const ProductImageGallery = ({ images, productTitle }: ProductImageGalleryProps)
   // Ensure we have at least one image
   const displayImages = images.length > 0 ? images : ['/placeholder.png'];
   const selectedImage = displayImages[selectedImageIndex] || displayImages[0];
-
-  // Debug: log images for troubleshooting
-  useEffect(() => {
-    console.log('ProductImageGallery - Images received:', {
-      imagesCount: images.length,
-      images: images,
-      displayImagesCount: displayImages.length,
-      displayImages: displayImages,
-      willShowThumbnails: displayImages.length > 1
+  
+  // Get metadata for selected image
+  const getImageMetadata = (imageUrl: string, index: number): ImageMetadata | null => {
+    if (!imageMetadata || imageMetadata.length === 0) return null;
+    
+    // Try to find metadata by URL (exact match or normalized)
+    const metaByUrl = imageMetadata.find(meta => {
+      if (!meta.url) return false;
+      // Try exact match
+      if (meta.url === imageUrl) return true;
+      // Try normalized URLs (remove query params, trailing slashes)
+      const normalize = (url: string) => url.split('?')[0].replace(/\/$/, '');
+      return normalize(meta.url) === normalize(imageUrl);
     });
-  }, [images, displayImages.length]);
+    if (metaByUrl) return metaByUrl;
+    
+    // Try to find metadata by index
+    if (imageMetadata[index]) return imageMetadata[index];
+    
+    return null;
+  };
+  
+  const selectedImageMeta = getImageMetadata(selectedImage, selectedImageIndex);
 
   const handleThumbnailClick = (index: number) => {
     setSelectedImageIndex(index);
@@ -109,26 +130,39 @@ const ProductImageGallery = ({ images, productTitle }: ProductImageGalleryProps)
                   : 'none'
               }}
             >
-              {displayImages.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleThumbnailClick(index)}
-                  className={`relative w-20 h-20 sm:w-20 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all bg-white ${
-                    selectedImageIndex === index
-                      ? 'border-[#8A773E] ring-2 ring-[#8A773E] ring-offset-1 shadow-md'
-                      : 'border-gray-200 hover:border-gray-400'
-                  }`}
-                  aria-label={`View image ${index + 1}`}
-                >
+              {displayImages.map((image, index) => {
+                const imageMeta = getImageMetadata(image, index);
+                const altText = imageMeta?.alt || `${productTitle} - Image ${index + 1}`;
+                const imageTitle = imageMeta?.title || `${productTitle} - Image ${index + 1}`;
+                
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleThumbnailClick(index)}
+                    className={`relative w-20 h-20 sm:w-20 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all bg-white ${
+                      selectedImageIndex === index
+                        ? 'border-[#8A773E] ring-2 ring-[#8A773E] ring-offset-1 shadow-md'
+                        : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                    aria-label={imageTitle}
+                    title={imageTitle}
+                  >
                   <Image
                     src={image}
-                    alt={`${productTitle} - Image ${index + 1}`}
+                    alt={altText}
+                    title={imageTitle}
                     fill
                     className="object-cover"
                     sizes="80px"
+                    {...(imageTitle && { 'data-image-title': imageTitle })}
+                    {...(altText && { 'data-image-alt': altText })}
+                    {...(imageMeta?.caption && { 'data-image-caption': imageMeta.caption })}
+                    {...(imageMeta?.description && { 'data-image-description': imageMeta.description })}
+                    itemProp="image"
                   />
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -146,17 +180,73 @@ const ProductImageGallery = ({ images, productTitle }: ProductImageGalleryProps)
       )}
 
       {/* Right: Main Image */}
-      <div className="flex-1 relative aspect-square w-full max-w-[520px] mx-auto overflow-hidden rounded-2xl bg-white flex items-center justify-center p-4 order-1 sm:order-2 group">
-        <div className="relative w-full h-full">
+      <figure 
+        className="flex-1 relative aspect-square w-full max-w-[520px] mx-auto overflow-hidden rounded-2xl bg-white flex flex-col items-center justify-center p-4 order-1 sm:order-2 group"
+        {...(selectedImageMeta?.title && { 'data-image-title': selectedImageMeta.title })}
+        {...(selectedImageMeta?.alt && { 'data-image-alt': selectedImageMeta.alt })}
+        {...(selectedImageMeta?.caption && { 'data-image-caption': selectedImageMeta.caption })}
+        {...(selectedImageMeta?.description && { 'data-image-description': selectedImageMeta.description })}
+      >
+        <div className="relative w-full h-full flex items-center justify-center">
           <Image
             src={selectedImage}
-            alt={productTitle}
+            alt={selectedImageMeta?.alt || productTitle}
+            title={selectedImageMeta?.title || productTitle}
             fill
             className="object-contain transition-opacity duration-300"
             priority
             sizes="(max-width: 768px) 100vw, 520px"
           />
         </div>
+        
+        {/* Image Metadata - Visible to Google in HTML attributes */}
+        {selectedImageMeta && (
+          <>
+            {/* Structured Data for Image */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "ImageObject",
+                  "url": selectedImage,
+                  "name": selectedImageMeta.title || productTitle,
+                  "caption": selectedImageMeta.alt || productTitle,
+                  "description": selectedImageMeta.description || selectedImageMeta.alt || productTitle,
+                })
+              }}
+            />
+            
+            {/* Metadata as HTML attributes - visible in page source */}
+            <div className="sr-only" itemScope itemType="https://schema.org/ImageObject">
+              <meta itemProp="url" content={selectedImage} />
+              <meta itemProp="name" content={selectedImageMeta.title || productTitle} />
+              <meta itemProp="caption" content={selectedImageMeta.alt || productTitle} />
+              {selectedImageMeta.description && (
+                <meta itemProp="description" content={selectedImageMeta.description} />
+              )}
+              {selectedImageMeta.caption && (
+                <meta itemProp="text" content={selectedImageMeta.caption} />
+              )}
+            </div>
+          </>
+        )}
+        
+        {/* Visible Caption - Only show if caption exists */}
+        {selectedImageMeta?.caption && (
+          <figcaption 
+            className="mt-4 text-sm text-gray-600 text-center"
+            itemProp="caption"
+            dangerouslySetInnerHTML={{ __html: selectedImageMeta.caption }}
+          />
+        )}
+        
+        {/* Description - Hidden from view, only in HTML for Google */}
+        {selectedImageMeta?.description && (
+          <div className="sr-only" itemProp="description">
+            {selectedImageMeta.description}
+          </div>
+        )}
 
         {/* Navigation Arrows - Only show if more than one image */}
         {displayImages.length > 1 && (
@@ -188,7 +278,7 @@ const ProductImageGallery = ({ images, productTitle }: ProductImageGalleryProps)
         >
           <Heart className="w-5 h-5 text-[#09121F]" strokeWidth={2} fill="none" />
         </button>
-      </div>
+      </figure>
     </div>
   );
 };

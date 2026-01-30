@@ -27,6 +27,14 @@ interface ImageMetadata {
   description?: string;
 }
 
+interface ImageMetadata {
+  url: string;
+  title?: string;
+  alt?: string;
+  caption?: string;
+  description?: string;
+}
+
 interface Product {
   id: string;
   handle: string;
@@ -42,6 +50,7 @@ interface Product {
   faqs?: Array<{ question: string; answer: string }>;
   variants?: Variant[];
   images?: string[];
+  imageMetadata?: ImageMetadata[];
   sections?: {
     productHero?: boolean;
     productDetails?: boolean;
@@ -71,11 +80,65 @@ export async function generateMetadata({ params }: { params: { handle: string } 
     };
   }
 
+  // Get imageMetadata from product
+  const imageMetadata = (product as any).imageMetadata;
+  const mainImageMeta = Array.isArray(imageMetadata) && imageMetadata.length > 0 
+    ? imageMetadata[0] 
+    : null;
+
+  // Ensure image URL is absolute
+  const imageUrl = product.image?.startsWith('http') 
+    ? product.image 
+    : `https://peptidesskin.com${product.image}`;
+
+  // Use alt text from imageMetadata if available, otherwise use product title
+  const imageAlt = mainImageMeta?.alt || product.title;
+  const imageTitle = mainImageMeta?.title || product.title;
+
+  // Get all images with metadata for OpenGraph
+  const ogImages = [];
+  if (Array.isArray(imageMetadata) && imageMetadata.length > 0) {
+    // Use first image (main image) with its metadata
+    const mainImg = imageMetadata[0];
+    const mainImgUrl = mainImg.url?.startsWith('http') 
+      ? mainImg.url 
+      : `https://peptidesskin.com${mainImg.url}`;
+    
+    ogImages.push({
+      url: mainImgUrl,
+      width: 1200,
+      height: 630,
+      alt: mainImg.alt || product.title,
+    });
+  } else {
+    // Fallback to main product image
+    ogImages.push({
+      url: imageUrl,
+      width: 1200,
+      height: 630,
+      alt: product.title,
+    });
+  }
+
   return {
     title: product.seoTitle || product.title,
     description: product.seoDescription || product.description,
     alternates: {
-      canonical: `/products/${handle}`,
+      canonical: `https://peptidesskin.com/products/${handle}`,
+    },
+    openGraph: {
+      title: product.seoTitle || product.title,
+      description: product.seoDescription || product.description,
+      url: `https://peptidesskin.com/products/${handle}`,
+      siteName: 'Peptides Skin',
+      images: ogImages,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.seoTitle || product.title,
+      description: product.seoDescription || product.description,
+      images: [ogImages[0]?.url || imageUrl],
     },
   };
 }
@@ -144,7 +207,17 @@ export default async function ProductPage({ params }: { params: { handle: string
     images: (() => {
       const imageSet = new Set<string>();
       
-      // First, add images from the product.images array (if it exists)
+      // First, add images from imageMetadata if available
+      const imageMetadata = (dbProduct as any).imageMetadata;
+      if (Array.isArray(imageMetadata) && imageMetadata.length > 0) {
+        imageMetadata.forEach((meta: any) => {
+          if (meta.url && meta.url.trim() !== '') {
+            imageSet.add(meta.url);
+          }
+        });
+      }
+      
+      // Then add images from the product.images array (if it exists)
       if ((dbProduct as any).images && Array.isArray((dbProduct as any).images)) {
         (dbProduct as any).images.forEach((img: string) => {
           if (img && img.trim() !== '') {
@@ -166,6 +239,14 @@ export default async function ProductPage({ params }: { params: { handle: string
       }
       
       return Array.from(imageSet);
+    })(),
+    // Include imageMetadata for use in components
+    imageMetadata: (() => {
+      const imageMetadata = (dbProduct as any).imageMetadata;
+      if (Array.isArray(imageMetadata) && imageMetadata.length > 0) {
+        return imageMetadata;
+      }
+      return undefined;
     })(),
     sections: {
       productHero: true,
@@ -201,7 +282,10 @@ export default async function ProductPage({ params }: { params: { handle: string
           <div className="container mx-auto px-4">
             {/* Product Hero - enabled by default */}
             {(product.sections?.productHero !== false) && (
-              <ProductHero product={product} />
+              <ProductHero product={{
+                ...product,
+                imageMetadata: product.imageMetadata,
+              }} />
             )}
             
             {/* Product Details - enabled by default */}

@@ -24,11 +24,11 @@ export async function getAllProducts(): Promise<ProductWithVariants[]> {
  * Get a product by handle
  */
 export async function getProductByHandle(handle: string): Promise<ProductWithVariants | null> {
-  // Always use raw SQL to ensure FAQs are included (works in both dev and production)
+  // Always use raw SQL to ensure FAQs and imageMetadata are included (works in both dev and production)
   // This bypasses Prisma client caching issues in production
-  // Explicitly select faqs as text to ensure proper type handling
+  // Explicitly select faqs and imageMetadata as text to ensure proper type handling
   const rawProduct = await prisma.$queryRaw<Array<any>>(
-    Prisma.sql`SELECT *, "faqs"::text as faqs_text FROM products WHERE handle = ${handle} LIMIT 1`
+    Prisma.sql`SELECT *, "faqs"::text as faqs_text, "imageMetadata"::text as imageMetadata_text FROM products WHERE handle = ${handle} LIMIT 1`
   );
   
   if (!rawProduct || rawProduct.length === 0) {
@@ -66,8 +66,34 @@ export async function getProductByHandle(handle: string): Promise<ProductWithVar
     productData.faqs = null;
   }
   
-  // Remove the temporary faqs_text field
+  // Parse imageMetadata - PostgreSQL JSONB can be returned as string, object, or array
+  const imageMetadataRaw = productData.imageMetadata_text || productData.imageMetadata;
+  try {
+    if (imageMetadataRaw === null || imageMetadataRaw === undefined) {
+      productData.imageMetadata = null;
+    } else if (typeof imageMetadataRaw === 'string') {
+      // If it's a string, try to parse it
+      try {
+        const parsed = JSON.parse(imageMetadataRaw);
+        productData.imageMetadata = Array.isArray(parsed) ? parsed : null;
+      } catch (e) {
+        console.error('Error parsing imageMetadata from string:', e);
+        productData.imageMetadata = null;
+      }
+    } else if (Array.isArray(imageMetadataRaw)) {
+      // Already an array, validate it
+      productData.imageMetadata = imageMetadataRaw.length > 0 ? imageMetadataRaw : null;
+    } else {
+      productData.imageMetadata = null;
+    }
+  } catch (error) {
+    console.error('Error processing imageMetadata:', error);
+    productData.imageMetadata = null;
+  }
+  
+  // Remove the temporary text fields
   delete productData.faqs_text;
+  delete productData.imageMetadata_text;
   
   // Get variants
   const variants = await prisma.productVariant.findMany({

@@ -1,6 +1,54 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Rich Text Editor Styles */
+.rich-text-editor[data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.rich-text-editor h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+}
+
+.rich-text-editor h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.75em 0;
+}
+
+.rich-text-editor h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 0.83em 0;
+}
+
+.rich-text-editor ul,
+.rich-text-editor ol {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+.rich-text-editor blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid #e5e7eb;
+  font-style: italic;
+}
+
+.rich-text-editor img {
+  max-width: 100%;
+  height: auto;
+  margin: 1em 0;
+}
+
+.rich-text-editor p {
+  margin: 1em 0;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

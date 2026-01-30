@@ -12,6 +12,39 @@
  * ```
  */
 export function generateProductSchema(product: any) {
+  // Ensure image URLs are absolute
+  const normalizeImageUrl = (url: string) => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `https://peptidesskin.com${url}`;
+  };
+
+  // Get images from imageMetadata if available, otherwise use images array or main image
+  let images: any[] = [];
+  const imageMetadata = product.imageMetadata;
+  
+  if (Array.isArray(imageMetadata) && imageMetadata.length > 0) {
+    // Use imageMetadata with full metadata
+    images = imageMetadata
+      .filter((img: any) => img && img.url)
+      .map((img: any) => {
+        const normalizedUrl = normalizeImageUrl(img.url);
+        const imageObj: any = {
+          "@type": "ImageObject",
+          "url": normalizedUrl,
+        };
+        
+        if (img.title) imageObj.name = img.title;
+        if (img.alt) imageObj.caption = img.alt;
+        if (img.description) imageObj.description = img.description;
+        
+        return imageObj;
+      });
+  } else if (Array.isArray(product.images) && product.images.length > 0) {
+    images = product.images.map((url: string) => normalizeImageUrl(url));
+  } else if (product.image) {
+    images = [normalizeImageUrl(product.image)];
+  }
+
   const schema: any = {
     "@context": "https://schema.org/",
     "@graph": [
@@ -19,7 +52,7 @@ export function generateProductSchema(product: any) {
         "@type": "Product",
         "@id": `https://peptidesskin.com/products/${product.handle}#product`,
         "name": product.title,
-        "image": Array.isArray(product.image) ? product.image : [product.image],
+        "image": images,
         "description": product.seoDescription || product.description,
         "sku": product.id || product.handle,
         "mpn": product.id || product.handle,
@@ -81,6 +114,12 @@ export function generateArticleSchema(post: any) {
   const isTechArticle = post.slug === 'tesamorelin-peptide-research-profile';
   const type = isTechArticle ? "TechArticle" : "BlogPosting";
 
+  // Use ogImage if available, otherwise use cover image
+  const imageUrl = post.ogImage || post.image;
+  const fullImageUrl = imageUrl?.startsWith('http') 
+    ? imageUrl 
+    : `https://peptidesskin.com${imageUrl}`;
+
   const article: any = {
     "@type": type,
     "@id": `https://peptidesskin.com/blogs/news/${post.slug}#article`,
@@ -88,8 +127,8 @@ export function generateArticleSchema(post: any) {
     "description": post.metaDescription || post.excerpt,
     "image": {
       "@type": "ImageObject",
-      "url": post.image,
-      "caption": post.alt,
+      "url": fullImageUrl,
+      "caption": post.alt || post.title,
       "width": 1200,
       "height": 630
     },

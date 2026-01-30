@@ -5,6 +5,14 @@ import { ChevronDown, ShoppingCart, ShieldCheck, Truck } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import ProductImageGallery from "@/components/ui/product-image-gallery";
 
+interface ImageMetadata {
+  url: string;
+  title?: string;
+  alt?: string;
+  caption?: string;
+  description?: string;
+}
+
 interface ProductHeroProps {
   product?: {
     id: string;
@@ -15,6 +23,7 @@ interface ProductHeroProps {
     description?: string;
     variants?: Array<{ id: string; title: string; price: string }>;
     images?: string[];
+    imageMetadata?: ImageMetadata[];
   };
 }
 
@@ -76,6 +85,7 @@ const ProductHero = ({ product }: ProductHeroProps) => {
           <ProductImageGallery 
             images={productImages} 
             productTitle={productTitle}
+            imageMetadata={product?.imageMetadata}
           />
         </div>
 

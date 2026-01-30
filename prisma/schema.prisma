@@ -88,6 +88,22 @@ model ProductCollection {
   @@map("product_collections")
 }
 
+// Blog Category Model
+model BlogCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  posts       BlogPost[]
+
+  @@index([slug])
+  @@index([name])
+  @@map("blog_categories")
+}
+
 // Blog Post Model
 model BlogPost {
   id              String   @id @default(cuid())
@@ -97,16 +113,31 @@ model BlogPost {
   content         String   @db.Text
   image           String
   alt             String?
+  imageCaption    String?  @db.Text
+  seoFilename     String?
   category        String
+  categoryId      String?
   date            DateTime
+  publishedDate   DateTime?
+  status          String   @default("draft") // "draft" or "published"
+  metaTitle       String?
   metaDescription String?  @db.Text
+  ogImage         String?  // Open Graph image URL
+  canonicalUrl    String?
+  keywords        String?  @db.Text // Comma-separated keywords
   tags            String[]
+  faqs            Json?    // Array of {question: string, answer: string}
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  blogCategory    BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   @@index([slug])
   @@index([category])
+  @@index([categoryId])
   @@index([date])
+  @@index([status])
+  @@index([publishedDate])
   @@map("blog_posts")
 }
 

@@ -17,7 +17,10 @@
     "test:webhook": "tsx scripts/test-webhook.ts",
     "webhook:ngrok": "./scripts/start-ngrok.sh",
     "create-products": "tsx scripts/create-products.ts",
-    "scrape-products": "tsx scripts/scrape-products.ts"
+    "scrape-products": "tsx scripts/scrape-products.ts",
+    "import-blogs": "tsx scripts/import-blogs.ts",
+    "import-blogs:file": "tsx scripts/import-blogs.ts --from-file",
+    "import-blogs:website": "tsx scripts/import-blogs.ts --from-website"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",

@@ -1,11 +1,8 @@
 import React from "react";
 import { Metadata } from "next";
 import { generateBreadcrumbSchema, generateBlogSchema } from "@/lib/schema";
-import { blogPosts } from "@/data/blog-posts";
-import BlogHero from "@/components/sections/blog-hero";
-import BlogGridTop from "@/components/sections/blog-grid-top";
+import { getAllBlogPosts } from "@/lib/db/blog";
 import BlogGridMain from "@/components/sections/blog-grid-main";
-import BlogGridBottom from "@/components/sections/blog-grid-bottom";
 
 export const metadata: Metadata = {
   title: "News & Research | Peptides Skin",
@@ -15,13 +12,37 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const blogPosts = await getAllBlogPosts();
+  
+  // Transform database posts to match the expected format
+  const transformedPosts = blogPosts.map(post => ({
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    image: post.image,
+    alt: post.alt || post.title,
+    imageCaption: (post as any).imageCaption || undefined,
+    seoFilename: (post as any).seoFilename || undefined,
+    ogImage: (post as any).ogImage || undefined,
+    category: post.category,
+    date: new Date(post.date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }).toUpperCase(),
+    metaDescription: post.metaDescription || post.excerpt,
+    tags: post.tags || [],
+    content: post.content,
+    faqs: post.faqs as Array<{ question: string; answer: string }> | undefined,
+  }));
+
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: 'Home', item: 'https://peptidesskin.com' },
     { name: 'News', item: 'https://peptidesskin.com/blogs/news' },
   ]);
 
-  const blogSchema = generateBlogSchema(blogPosts);
+  const blogSchema = generateBlogSchema(transformedPosts);
 
   return (
     <>
@@ -35,7 +56,7 @@ export default function BlogPage() {
       />
       <div className="min-h-screen bg-white">
         <main className="pt-[0px]">
-          <BlogGridMain />
+          <BlogGridMain posts={transformedPosts} />
         </main>
       </div>
     </>

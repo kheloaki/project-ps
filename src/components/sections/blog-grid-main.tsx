@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { blogPosts as allBlogPosts } from '@/data/blog-posts';
 
 interface BlogPost {
   slug: string;
@@ -14,15 +13,9 @@ interface BlogPost {
   isFeatured?: boolean;
 }
 
-const blogPosts: BlogPost[] = allBlogPosts.map((post, index) => ({
-  slug: post.slug,
-  title: post.title,
-  excerpt: post.excerpt,
-  image: post.image,
-  category: post.category,
-  date: post.date,
-  isFeatured: index === 0,
-}));
+interface BlogGridMainProps {
+  posts: BlogPost[];
+}
 
 const BlogCard = ({ post }: { post: BlogPost }) => {
   const isFeatured = post.isFeatured;
@@ -30,16 +23,25 @@ const BlogCard = ({ post }: { post: BlogPost }) => {
 
   return (
     <div className={`group mb-8 ${isFeatured ? 'col-span-1 md:col-span-3 lg:col-span-3 flex flex-col md:flex-row gap-8' : 'col-span-1'}`}>
-      <div className={`relative overflow-hidden border border-[#e5e5e5] ${isFeatured ? 'md:w-[65%]' : 'w-full'}`}>
+      <figure 
+        className={`relative overflow-hidden border border-[#e5e5e5] ${isFeatured ? 'md:w-[65%]' : 'w-full'}`}
+        {...((post as any).imageCaption && { 'data-image-caption': (post as any).imageCaption })}
+        {...((post as any).seoFilename && { 'data-seo-filename': (post as any).seoFilename })}
+      >
         <a href={link} className="block aspect-[16/9]">
           <Image
             src={post.image}
-            alt={post.title}
+            alt={post.alt || post.title}
+            title={post.title}
             fill
             className="object-cover transition-transform duration-500 scale-100 group-hover:scale-105"
+            data-image-alt={post.alt || post.title}
+            data-image-title={post.title}
+            {...((post as any).imageCaption && { 'data-image-caption': (post as any).imageCaption })}
+            {...((post as any).seoFilename && { 'data-seo-filename': (post as any).seoFilename })}
           />
         </a>
-      </div>
+      </figure>
       <div className={`${isFeatured ? 'md:w-[35%] flex flex-col justify-start' : 'mt-[15px]'}`}>
         <a href={link} className="block decoration-0">
           <h3 className="text-[20px] font-semibold leading-[1.3] uppercase mb-2.5 mt-0 tracking-tight text-black">
@@ -57,7 +59,12 @@ const BlogCard = ({ post }: { post: BlogPost }) => {
   );
 };
 
-export default function BlogGridMain() {
+export default function BlogGridMain({ posts }: BlogGridMainProps) {
+  const blogPosts: BlogPost[] = posts.map((post, index) => ({
+    ...post,
+    isFeatured: index === 0,
+  }));
+
   const featuredPost = blogPosts.find(p => p.isFeatured);
   const coreGridPosts = blogPosts.filter(p => !p.isFeatured);
 

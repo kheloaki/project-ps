@@ -34,18 +34,25 @@ export function MainBlog({ settings }: MainBlogProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {blogPosts.map((post) => (
             <article key={post.slug} className="group bg-white border border-[#e0e0e0] flex flex-col h-full hover:shadow-lg transition-shadow duration-300">
-              <a href={`/blogs/news/${post.slug}`} className="block relative aspect-[16/10] overflow-hidden">
-                <Image
-                  src={post.image}
-                  alt={post.alt}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-w-768px) 100vw, (max-w-1200px) 50vw, 33vw"
-                />
+              <figure className="block relative aspect-[16/10] overflow-hidden">
+                <a href={`/blogs/news/${post.slug}`} className="block w-full h-full">
+                  <Image
+                    src={post.image}
+                    alt={post.alt || post.title}
+                    title={post.title}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    sizes="(max-w-768px) 100vw, (max-w-1200px) 50vw, 33vw"
+                    data-image-alt={post.alt || post.title}
+                    data-image-title={post.title}
+                    {...((post as any).imageCaption && { 'data-image-caption': (post as any).imageCaption })}
+                    {...((post as any).seoFilename && { 'data-seo-filename': (post as any).seoFilename })}
+                  />
+                </a>
                 <div className="absolute top-4 left-4 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-black">
                   {post.category}
                 </div>
-              </a>
+              </figure>
               
               <div className="p-6 flex flex-col flex-1">
                 <div className="text-[11px] font-medium text-[#666666] uppercase tracking-widest mb-3">
