@@ -134,6 +134,7 @@ export async function PUT(
       category,
       coaImageUrl,
       isPopular = false,
+      tags = [],
       faqs = [],
       images = [],
       imageMetadata = [],
@@ -189,7 +190,7 @@ export async function PUT(
       where: { productId: id },
     });
 
-    // Prepare update data (without isPopular and faqs to avoid Prisma client issues)
+    // Prepare update data (without isPopular, tags, and faqs to avoid Prisma client issues)
     const updateData: any = {
       handle,
       title,
@@ -202,6 +203,7 @@ export async function PUT(
       seoDescription: seoDescription || null,
       category,
       coaImageUrl: coaImageUrl || null,
+      tags: Array.isArray(tags) ? tags.filter((tag: string) => tag && tag.trim()) : [] as string[],
       variants: {
         create: variants.map((variant: any) => ({
           title: variant.title,

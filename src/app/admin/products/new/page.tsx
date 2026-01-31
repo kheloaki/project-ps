@@ -224,9 +224,24 @@ export default function NewProductPage() {
   };
 
   const handleTagChange = (index: number, value: string) => {
-    const updated = [...tags];
-    updated[index] = value;
-    setTags(updated);
+    // Check if value contains comma (bulk input)
+    if (value.includes(',')) {
+      const newTags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      if (newTags.length > 0) {
+        // Replace current tag with first new tag, add rest as new tags
+        const updated = [...tags];
+        updated[index] = newTags[0];
+        // Add remaining tags
+        for (let i = 1; i < newTags.length; i++) {
+          updated.push(newTags[i]);
+        }
+        setTags(updated);
+      }
+    } else {
+      const updated = [...tags];
+      updated[index] = value;
+      setTags(updated);
+    }
   };
 
   const addFaq = () => {
@@ -394,6 +409,7 @@ export default function NewProductPage() {
         seoTitle: formData.seoTitle || null,
         seoDescription: formData.seoDescription || null,
         coaImageUrl: formData.coaImageUrl || null,
+        tags: tags.filter(tag => tag && tag.trim()), // Only send non-empty tags
         faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()), // Only send FAQs with both question and answer
         variants: variants.map(v => ({
           title: v.title,
@@ -962,6 +978,11 @@ export default function NewProductPage() {
             {/* Tags Tab */}
             {activeTab === 'tags' && (
               <div className="space-y-4">
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Tip:</strong> You can add multiple tags at once by separating them with commas (e.g., "tag1, tag2, tag3")
+                  </p>
+                </div>
                 {tags.map((tag, index) => (
                   <div key={index} className="flex gap-4">
                     <div className="flex-1">
@@ -970,7 +991,7 @@ export default function NewProductPage() {
                         value={tag}
                         onChange={(e) => handleTagChange(index, e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        placeholder="Enter tag"
+                        placeholder="Enter tag (comma-separated for multiple)"
                       />
                     </div>
                     {tags.length > 1 && (

@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       category,
       coaImageUrl,
       isPopular = false,
+      tags = [],
       faqs = [],
       images = [],
       imageMetadata = [],
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare create data (without isPopular and faqs to avoid Prisma client issues)
+    // Prepare create data (without isPopular, tags, and faqs to avoid Prisma client issues)
     const createData: any = {
       handle,
       title,
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
       seoDescription: seoDescription || null,
       category,
       coaImageUrl: coaImageUrl || null,
+      tags: Array.isArray(tags) ? tags.filter((tag: string) => tag && tag.trim()) : [] as string[],
       variants: {
         create: variants.map((variant: any) => ({
           title: variant.title,
