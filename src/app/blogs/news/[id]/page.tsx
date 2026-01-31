@@ -6,10 +6,16 @@ import { getBlogPostBySlug, getAllBlogPosts } from '@/lib/db/blog';
 import { generateArticleSchema, generateBreadcrumbSchema, generateFAQSchema } from '@/lib/schema';
 
 export async function generateStaticParams() {
-  const posts = await getAllBlogPosts();
-  return posts.map((post) => ({
-    id: post.slug,
-  }));
+  try {
+    const posts = await getAllBlogPosts();
+    return posts.map((post) => ({
+      id: post.slug,
+    }));
+  } catch (error) {
+    console.error('Error generating static params for blog posts:', error);
+    // Return empty array if there's an error (e.g., database not available during build)
+    return [];
+  }
 }
 
 export async function generateMetadata({
@@ -28,9 +34,12 @@ export async function generateMetadata({
 
   // Use ogImage if available, otherwise use cover image
   const imageUrl = post.ogImage || post.image;
-  const fullImageUrl = imageUrl.startsWith('http') 
-    ? imageUrl 
-    : `https://peptidesskin.com${imageUrl}`;
+  // Handle case where imageUrl might be null/undefined or empty
+  const fullImageUrl = imageUrl && imageUrl.trim() 
+    ? (imageUrl.startsWith('http') 
+        ? imageUrl 
+        : `https://peptidesskin.com${imageUrl}`)
+    : 'https://peptidesskin.com/default-image.jpg'; // Fallback image
 
   return {
       title: `${post.title} | Peptides Skin`,
