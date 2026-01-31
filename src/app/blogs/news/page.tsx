@@ -13,29 +13,53 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogPage() {
-  const blogPosts = await getAllBlogPosts();
+  let blogPosts;
+  try {
+    blogPosts = await getAllBlogPosts();
+  } catch (error) {
+    console.error('Error fetching blog posts:', error);
+    // Fallback to empty array if database is unavailable during build
+    blogPosts = [];
+  }
   
   // Transform database posts to match the expected format
-  const transformedPosts = blogPosts.map(post => ({
-    slug: post.slug,
-    title: post.title,
-    excerpt: post.excerpt,
-    image: post.image,
-    alt: post.alt || post.title,
-    imageCaption: (post as any).imageCaption || undefined,
-    seoFilename: (post as any).seoFilename || undefined,
-    ogImage: (post as any).ogImage || undefined,
-    category: post.category,
-    date: new Date(post.date).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    }).toUpperCase(),
-    metaDescription: post.metaDescription || post.excerpt,
-    tags: post.tags || [],
-    content: post.content,
-    faqs: post.faqs as Array<{ question: string; answer: string }> | undefined,
-  }));
+  const transformedPosts = blogPosts.map(post => {
+    // Safely format date
+    let formattedDate = '';
+    try {
+      if (post.date) {
+        formattedDate = new Date(post.date).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        }).toUpperCase();
+      }
+    } catch (error) {
+      console.error('Error formatting date for post:', post.slug, error);
+      formattedDate = new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }).toUpperCase();
+    }
+
+    return {
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      image: post.image,
+      alt: post.alt || post.title,
+      imageCaption: (post as any).imageCaption || undefined,
+      seoFilename: (post as any).seoFilename || undefined,
+      ogImage: (post as any).ogImage || undefined,
+      category: post.category,
+      date: formattedDate,
+      metaDescription: post.metaDescription || post.excerpt,
+      tags: post.tags || [],
+      content: post.content,
+      faqs: post.faqs as Array<{ question: string; answer: string }> | undefined,
+    };
+  });
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: 'Home', item: 'https://peptidesskin.com' },
