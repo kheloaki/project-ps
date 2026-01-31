@@ -2,10 +2,13 @@ import { prisma } from '@/lib/prisma';
 import type { BlogPost } from '@prisma/client';
 
 /**
- * Get all blog posts
+ * Get all blog posts (only published)
  */
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
   return prisma.blogPost.findMany({
+    where: {
+      status: 'published',
+    },
     orderBy: {
       date: 'desc',
     },
@@ -13,16 +16,19 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
 }
 
 /**
- * Get a blog post by slug
+ * Get a blog post by slug (only published)
  */
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-  return prisma.blogPost.findUnique({
-    where: { slug },
+  return prisma.blogPost.findFirst({
+    where: { 
+      slug,
+      status: 'published',
+    },
   });
 }
 
 /**
- * Get blog posts by category
+ * Get blog posts by category (only published)
  */
 export async function getBlogPostsByCategory(category: string): Promise<BlogPost[]> {
   return prisma.blogPost.findMany({
@@ -31,6 +37,7 @@ export async function getBlogPostsByCategory(category: string): Promise<BlogPost
         equals: category,
         mode: 'insensitive',
       },
+      status: 'published',
     },
     orderBy: {
       date: 'desc',
@@ -39,10 +46,13 @@ export async function getBlogPostsByCategory(category: string): Promise<BlogPost
 }
 
 /**
- * Get recent blog posts
+ * Get recent blog posts (only published)
  */
 export async function getRecentBlogPosts(limit: number = 5): Promise<BlogPost[]> {
   return prisma.blogPost.findMany({
+    where: {
+      status: 'published',
+    },
     take: limit,
     orderBy: {
       date: 'desc',
