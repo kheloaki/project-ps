@@ -21,7 +21,8 @@
     "scrape-products": "tsx scripts/scrape-products.ts",
     "import-blogs": "tsx scripts/import-blogs.ts",
     "import-blogs:file": "tsx scripts/import-blogs.ts --from-file",
-    "import-blogs:website": "tsx scripts/import-blogs.ts --from-website"
+    "import-blogs:website": "tsx scripts/import-blogs.ts --from-website",
+    "migrate-images": "tsx scripts/migrate-images-to-media.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",

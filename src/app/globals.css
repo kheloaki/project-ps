@@ -45,6 +45,397 @@
   margin: 1em 0;
 }
 
+/* Image Block Styles (Block Editor Style) */
+.rich-text-editor .rich-text-image-block {
+  display: block;
+  margin: 1.5em auto;
+  padding: 8px;
+  max-width: 100%;
+  position: relative;
+  border: 2px dashed #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
+  background-color: #f9fafb;
+}
+
+.rich-text-editor .rich-text-image-block:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.rich-text-editor .rich-text-image-block:focus-within {
+  border-color: #2563eb;
+  background-color: #dbeafe;
+  outline: none;
+}
+
+.rich-text-editor .rich-text-image-block {
+  position: relative;
+}
+
+.rich-text-editor .rich-text-image-block img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.rich-text-editor .rich-text-image-edit-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.rich-text-editor .rich-text-image-block:hover .rich-text-image-edit-btn {
+  opacity: 1;
+}
+
+.rich-text-editor .rich-text-image-edit-btn:hover {
+  background: rgba(37, 99, 235, 1);
+}
+
+.rich-text-editor .rich-text-image-caption {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.rich-text-editor .rich-text-image-block::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+/* Ensure proper spacing around image blocks */
+.rich-text-editor p + .rich-text-image-block,
+.rich-text-editor .rich-text-image-block + p,
+.rich-text-editor .rich-text-image-block + .rich-text-image-block {
+  margin-top: 1.5em;
+}
+
+/* Block Editor Styles - Make blocks more visible and interactive */
+.rich-text-editor .rich-text-block {
+  position: relative;
+  margin: 0.75em 0;
+  padding: 0.5em;
+  border-radius: 4px;
+  transition: all 0.2s;
+  min-height: 1.5em;
+}
+
+.rich-text-editor .rich-text-block:hover {
+  background-color: #f9fafb;
+  outline: 1px dashed #d1d5db;
+}
+
+.rich-text-editor .rich-text-block:focus-within {
+  background-color: #f3f4f6;
+  outline: 2px solid #3b82f6;
+}
+
+.rich-text-editor .rich-text-block::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 0;
+  background-color: #3b82f6;
+  border-radius: 2px;
+  transition: height 0.2s;
+  opacity: 0;
+}
+
+.rich-text-editor .rich-text-block:hover::before {
+  height: 20px;
+  opacity: 1;
+}
+
+/* Make empty blocks more visible */
+.rich-text-editor .rich-text-block:empty::after {
+  content: 'Type / for commands';
+  color: #9ca3af;
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* WordPress Gutenberg Block Editor Styles */
+.wp-block-editor {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  position: relative;
+  overflow: visible;
+  isolation: isolate; /* Create new stacking context */
+}
+
+.wp-block-editor-wrapper {
+  position: relative;
+  overflow: visible;
+}
+
+.wp-block-editor .editor-content {
+  position: relative;
+  overflow: visible;
+}
+
+.wp-block {
+  position: relative;
+  margin: 4px 0;
+  padding: 4px 0;
+  transition: all 0.15s ease;
+  cursor: text;
+}
+
+.wp-block:hover:not(.is-selected) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.wp-block.is-selected {
+  background-color: rgba(20, 184, 166, 0.08);
+  border-radius: 4px;
+}
+
+.wp-block.is-selected .block-content {
+  background-color: transparent;
+  outline: 2px solid #14b8a6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.block-controls {
+  position: absolute;
+  left: -40px;
+  top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.block-controls button {
+  pointer-events: auto;
+}
+
+.block-mover {
+  cursor: move;
+  color: #757575;
+  transition: color 0.2s;
+}
+
+.block-mover:hover {
+  color: #1e1e1e;
+}
+
+.block-inserter-btn {
+  color: #757575;
+  transition: all 0.2s;
+}
+
+.block-inserter-btn:hover {
+  color: #0ea5e9;
+  background-color: rgba(14, 165, 233, 0.1);
+}
+
+.block-toolbar {
+  position: absolute;
+  top: -44px;
+  left: 0;
+  background: #1e1e1e;
+  color: white;
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.block-toolbar button {
+  color: white;
+}
+
+.block-toolbar button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.block-content {
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+
+.block-content [contenteditable] {
+  outline: none;
+  min-height: 1.5em;
+  line-height: 1.6;
+}
+
+.block-content [contenteditable]:focus {
+  outline: none;
+}
+
+.block-content [contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.block-inserter {
+  margin: 8px 0;
+  position: relative;
+  z-index: 10;
+}
+
+.block-inserter > div {
+  max-width: 400px;
+}
+
+.inline-block-inserter {
+  position: relative;
+  z-index: 20;
+}
+
+.block-inserter-trigger {
+  margin-top: 8px;
+  padding-left: 8px;
+}
+
+.block-inserter-trigger button {
+  background: #000;
+  color: white;
+  border-radius: 4px;
+}
+
+.block-inserter-trigger button:hover {
+  background: #333;
+}
+
+.empty-editor {
+  padding: 48px 0;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Block Type Specific Styles */
+.block-image {
+  margin: 16px 0;
+  display: block;
+}
+
+.block-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+  transition: all 0.2s ease;
+}
+
+.block-image.align-left {
+  text-align: left;
+}
+
+.block-image.align-left img {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.block-image.align-center {
+  text-align: center;
+}
+
+.block-image.align-center img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.block-image.align-right {
+  text-align: right;
+}
+
+.block-image.align-right img {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.block-image.align-full {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.block-image.align-full img {
+  width: 100%;
+  border-radius: 0;
+}
+
+.block-image figcaption {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* List styles */
+.block-content ul,
+.block-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.block-content li {
+  margin: 4px 0;
+}
+
+/* Quote styles */
+.block-content blockquote {
+  margin: 16px 0;
+  padding-left: 16px;
+  border-left: 4px solid #e5e7eb;
+  font-style: italic;
+  color: #4b5563;
+}
+
+/* Code styles */
+.block-content pre {
+  margin: 16px 0;
+  padding: 16px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.block-content code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* Separator styles */
+.block-content hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
 .rich-text-editor p {
   margin: 1em 0;
 }

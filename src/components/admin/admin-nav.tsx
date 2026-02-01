@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Package, 
@@ -21,6 +21,7 @@ const navItems = [
   { href: '/admin/products', icon: Package, label: 'Products' },
   { href: '/admin/categories', icon: Tag, label: 'Categories' },
   { href: '/admin/blog', icon: FileText, label: 'Blog', hasSubmenu: true },
+  { href: '/admin/media', icon: ImageIcon, label: 'Media' },
   { href: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
   { href: '/admin/hero-images', icon: ImageIcon, label: 'Hero Images' },
 ];
@@ -33,8 +34,13 @@ const blogSubmenu = [
 
 export function AdminNav() {
   const pathname = usePathname();
-  const isBlogActive = pathname?.startsWith('/admin/blog');
-  const [isBlogExpanded, setIsBlogExpanded] = useState(isBlogActive);
+  const isBlogActive = pathname?.startsWith('/admin/blog') ?? false;
+  const [isBlogExpanded, setIsBlogExpanded] = useState(false);
+  
+  // Set initial expanded state after mount to avoid hydration mismatch
+  useEffect(() => {
+    setIsBlogExpanded(isBlogActive);
+  }, [isBlogActive]);
 
   return (
     <>

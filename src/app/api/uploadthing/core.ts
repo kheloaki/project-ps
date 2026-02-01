@@ -1,5 +1,6 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
 const f = createUploadthing();
 
@@ -24,6 +25,24 @@ export const ourFileRouter = {
       // This code RUNS ON YOUR SERVER after upload
       console.log("Upload complete for userId:", metadata.userId);
       console.log("file url", file.url);
+      
+      // Save to Media table
+      try {
+        await (prisma as any).media.upsert({
+          where: { url: file.url },
+          update: {},
+          create: {
+            url: file.url,
+            filename: file.name,
+            size: file.size,
+            mimeType: file.type,
+            uploadedBy: metadata.userId || null,
+          },
+        });
+      } catch (error) {
+        console.error('Error saving media to database:', error);
+        // Don't fail the upload if database save fails
+      }
       
       // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
       return { uploadedBy: metadata.userId };

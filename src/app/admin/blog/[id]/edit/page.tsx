@@ -10,9 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BlogCoverUploader } from '@/components/upload/blog-cover-uploader';
+import { BlogCoverUploader, type BlogImageMetadata } from '@/components/upload/blog-cover-uploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { BlockEditor } from '@/components/admin/block-editor';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
@@ -57,6 +57,8 @@ export default function EditBlogPostPage() {
     keywords: '',
   });
 
+  const [imageMetadata, setImageMetadata] = useState<BlogImageMetadata | null>(null);
+
   // Fetch blog post data
   useEffect(() => {
     const fetchPost = async () => {
@@ -86,6 +88,16 @@ export default function EditBlogPostPage() {
           canonicalUrl: post.canonicalUrl || '',
           keywords: post.keywords || '',
         });
+
+        // Set image metadata from post data
+        if (post.image) {
+          setImageMetadata({
+            url: post.image,
+            alt: post.alt || '',
+            caption: post.imageCaption || '',
+            seoFilename: post.seoFilename || '',
+          });
+        }
 
         if (post.publishedDate) {
           setPublishedDate(new Date(post.publishedDate));
@@ -175,8 +187,18 @@ export default function EditBlogPostPage() {
     setLoading(true);
 
     try {
+      // Use image metadata if available, otherwise fall back to formData
+      const imageUrl = imageMetadata?.url || formData.image;
+      const altText = imageMetadata?.alt || formData.alt;
+      const imageCaption = imageMetadata?.caption || formData.imageCaption;
+      const seoFilename = imageMetadata?.seoFilename || formData.seoFilename;
+
       const payload = {
         ...formData,
+        image: imageUrl,
+        alt: altText,
+        imageCaption: imageCaption,
+        seoFilename: seoFilename,
         content: contentMode === 'rich' ? formData.content : formData.htmlContent,
         tags: selectedTags,
         publishedDate: publishedDate?.toISOString() || null,
@@ -229,7 +251,16 @@ export default function EditBlogPostPage() {
         <p className="text-gray-600">Update blog post details</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8" onKeyDown={(e) => {
+        // Prevent form submission on Enter key unless it's the submit button
+        if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'BUTTON' && (e.target as HTMLElement).type !== 'submit') {
+          // Allow Enter in textareas and contentEditable, but prevent form submission
+          if ((e.target as HTMLElement).tagName === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) {
+            return; // Allow default behavior in text areas
+          }
+          e.preventDefault();
+        }
+      }}>
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
           <div className="border-b border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-1">Edit Blog Post</h2>
@@ -363,11 +394,11 @@ export default function EditBlogPostPage() {
                 }}
               >
                 <TabsList>
-                  <TabsTrigger value="rich">Rich editor</TabsTrigger>
-                  <TabsTrigger value="html">Paste HTML</TabsTrigger>
+                  <TabsTrigger value="rich">Block Editor</TabsTrigger>
+                  <TabsTrigger value="html">HTML</TabsTrigger>
                 </TabsList>
                 <TabsContent value="rich" className="mt-4">
-                  <RichTextEditor
+                  <BlockEditor
                     value={formData.content || formData.htmlContent}
                     onChange={(html) => {
                       handleInputChange('content', html);
@@ -376,7 +407,7 @@ export default function EditBlogPostPage() {
                         handleInputChange('htmlContent', html);
                       }
                     }}
-                    placeholder="Write your post... You can add images using the image button."
+                    placeholder="Type / to add a block"
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">Use the image button to add images inside the article.</p>
@@ -405,49 +436,30 @@ export default function EditBlogPostPage() {
               <h3 className="text-md font-semibold text-gray-900 mb-2">
                 Cover image <span className="text-red-500">*</span>
               </h3>
-              <p className="text-sm text-gray-600 mb-4">Feature image displayed at the top of the blog post.</p>
+              <p className="text-sm text-gray-600 mb-4">Feature image displayed at the top of the blog post. Upload image and add metadata.</p>
               
-              <div className="space-y-4">
-                <BlogCoverUploader
-                  onUploadComplete={(url) => handleInputChange('image', url)}
-                  currentImage={formData.image}
-                />
-
-                <div>
-                  <Label htmlFor="seoFilename">SEO-Friendly Filename (Optional)</Label>
-                  <Input
-                    id="seoFilename"
-                    placeholder="auto-generated-from-filename"
-                    value={formData.seoFilename}
-                    onChange={(e) => handleInputChange('seoFilename', e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Improves Google Images ranking</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="alt">Alt Text (Recommended)</Label>
-                  <Input
-                    id="alt"
-                    placeholder="Describe the image for accessibility & SEO"
-                    value={formData.alt}
-                    onChange={(e) => handleInputChange('alt', e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Critical for accessibility and SEO</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Image Caption */}
-            <div>
-              <Label htmlFor="imageCaption">Image caption</Label>
-              <Textarea
-                id="imageCaption"
-                placeholder="Caption text displayed below the cover image"
-                value={formData.imageCaption}
-                onChange={(e) => handleInputChange('imageCaption', e.target.value)}
-                rows={2}
+              <BlogCoverUploader
+                onMetadataChange={(metadata) => {
+                  // Only update if metadata actually changed to prevent loops
+                  if (!imageMetadata || 
+                      imageMetadata.url !== metadata.url ||
+                      imageMetadata.alt !== metadata.alt ||
+                      imageMetadata.caption !== metadata.caption ||
+                      imageMetadata.seoFilename !== metadata.seoFilename) {
+                    setImageMetadata(metadata);
+                    handleInputChange('image', metadata.url);
+                    handleInputChange('alt', metadata.alt || '');
+                    handleInputChange('imageCaption', metadata.caption || '');
+                    handleInputChange('seoFilename', metadata.seoFilename || '');
+                  }
+                }}
+                currentMetadata={imageMetadata || (formData.image ? {
+                  url: formData.image,
+                  alt: formData.alt,
+                  caption: formData.imageCaption,
+                  seoFilename: formData.seoFilename,
+                } : undefined)}
               />
-              <p className="text-xs text-gray-500 mt-1">Optional caption displayed below the cover image</p>
             </div>
 
             {/* Published Date */}

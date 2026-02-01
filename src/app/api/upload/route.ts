@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadImageToSupabase } from '@/lib/supabase-storage';
 import { requireAuth } from '@/lib/clerk';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@clerk/nextjs/server';
 
 /**
  * POST /api/upload
@@ -43,6 +45,25 @@ export async function POST(request: NextRequest) {
 
     // Upload to Supabase Storage
     const url = await uploadImageToSupabase(file, folder, bucket);
+
+    // Save to Media table
+    try {
+      const { userId } = await auth();
+      await (prisma as any).media.upsert({
+        where: { url },
+        update: {},
+        create: {
+          url,
+          filename: file.name,
+          size: file.size,
+          mimeType: file.type,
+          uploadedBy: userId || null,
+        },
+      });
+    } catch (error) {
+      console.error('Error saving media to database:', error);
+      // Don't fail the upload if database save fails
+    }
 
     return NextResponse.json({
       success: true,

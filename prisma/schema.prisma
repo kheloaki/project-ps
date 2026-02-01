@@ -235,3 +235,27 @@ model HeroImage {
   @@index([order])
   @@map("hero_images")
 }
+
+// Media Model (for media library)
+model Media {
+  id          String   @id @default(cuid())
+  url         String   @unique
+  filename    String
+  title       String?
+  alt         String?
+  caption     String?  @db.Text
+  description String?  @db.Text
+  seoFilename String?
+  width       Int?
+  height      Int?
+  size        Int?     // File size in bytes
+  mimeType    String?  // e.g., "image/jpeg"
+  uploadedBy  String?  // Clerk user ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([url])
+  @@index([uploadedBy])
+  @@index([createdAt])
+  @@map("media")
+}
