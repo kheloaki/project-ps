@@ -214,7 +214,7 @@ export default function MediaPage() {
               key={item.id}
               className="group relative bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
             >
-              <div className="aspect-square relative bg-gray-100 overflow-hidden">
+              <div className="aspect-square relative bg-gray-50 overflow-hidden">
                 {imageErrors.has(item.id) ? (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 text-gray-400 text-xs p-2">
                     <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
@@ -233,27 +233,44 @@ export default function MediaPage() {
                     </button>
                   </div>
                 ) : (
-                  <img
-                    src={item.url}
-                    alt={item.alt || item.filename}
-                    className="w-full h-full object-cover"
-                    onError={() => {
-                      setImageErrors(prev => new Set(prev).add(item.id));
-                    }}
-                    loading="lazy"
-                  />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={item.url}
+                      alt={item.alt || item.filename}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                      onError={() => {
+                        console.error('Image load error:', item.filename, item.url?.substring(0, 100));
+                        setImageErrors(prev => new Set(prev).add(item.id));
+                      }}
+                      onLoad={() => {
+                        setImageErrors(prev => {
+                          const newSet = new Set(prev);
+                          newSet.delete(item.id);
+                          return newSet;
+                        });
+                      }}
+                    />
+                  </div>
                 )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center gap-2">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-opacity flex items-center justify-center gap-2 z-10 pointer-events-none">
                   <button
-                    onClick={() => setEditingMedia(item)}
-                    className="opacity-0 group-hover:opacity-100 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingMedia(item);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-all pointer-events-auto z-10"
                     title="Edit metadata"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id, item.url)}
-                    className="opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item.id, item.url);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-all pointer-events-auto z-10"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -380,6 +397,7 @@ function MediaMetadataDialog({
                 alt={media.alt || media.filename}
                 fill
                 className="object-contain"
+                unoptimized
               />
             </div>
             <div className="mt-4 space-y-2 text-sm text-gray-600">
